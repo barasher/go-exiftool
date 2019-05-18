@@ -35,3 +35,21 @@ for _, fileInfo := range fileInfos {
     }
 }
 ```
+
+Output :
+
+```
+[FOV] 69.4 deg
+[Orientation] Rotate 90 CW
+[ColorSpace] sRGB
+[Compression] JPEG (old-style)
+[YCbCrSubSampling] YCbCr4:2:2 (2 1)
+[Aperture] 1.7
+[ColorComponents] 3
+[SubSecCreateDate] 2019:04:04 13:18:03.0937
+[FileSize] 26 kB
+[FileAccessDate] 2019:05:17 22:44:26+02:00
+[DateTimeOriginal] 2019:04:04 13:18:03
+[CreateDate] 2019:04:04 13:18:03
+(...)
+```

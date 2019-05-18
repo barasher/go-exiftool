@@ -4,6 +4,8 @@ go:
   - 1.x
 
 before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y exiftool
   - env GO111MODULE=on go get -v
 
 script:
