@@ -1,0 +1,113 @@
+package exiftool
+
+import (
+	"bufio"
+	"fmt"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNewExiftoolEmpty(t *testing.T) {
+	e, err := NewExiftool()
+	assert.Nil(t, err)
+
+	defer e.Close()
+}
+
+func TestNewExifToolOptOk(t *testing.T) {
+	var exec1, exec2 bool
+	f1 := func(*Exiftool) error {
+		exec1 = true
+		return nil
+	}
+	f2 := func(*Exiftool) error {
+		exec2 = true
+		return nil
+	}
+	e, err := NewExiftool(f1, f2)
+	assert.Nil(t, err)
+	defer e.Close()
+	assert.True(t, exec1)
+	assert.True(t, exec2)
+}
+
+func TestNewExifToolOptKo(t *testing.T) {
+	f := func(*Exiftool) error {
+		return fmt.Errorf("err")
+	}
+	_, err := NewExiftool(f)
+	assert.NotNil(t, err)
+}
+func TestSingleExtract(t *testing.T) {
+	var tcs = []struct {
+		tcID    string
+		inFiles []string
+		expOk   []bool
+	}{
+		{"single", []string{"./testdata/20190404_131804.jpg"}, []bool{true}},
+		{"multiple", []string{"./testdata/20190404_131804.jpg", "./testdata/20190404_131804.jpg"}, []bool{true, true}},
+		{"nonExisting", []string{"./testdata/nonExisting"}, []bool{false}},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.tcID, func(t *testing.T) {
+			e, err := NewExiftool()
+			assert.Nilf(t, err, "error not nil: %v", err)
+			defer e.Close()
+			fms := e.ExtractMetadata(tc.inFiles...)
+			assert.Equal(t, len(tc.expOk), len(fms))
+			for i, fm := range fms {
+				t.Log(fm)
+				assert.Equalf(t, tc.expOk[i], fm.Err == nil, "#%v different", i)
+			}
+		})
+	}
+}
+
+func TestMultiExtract(t *testing.T) {
+	e, err := NewExiftool()
+	assert.Nilf(t, err, "error not nil: %v", err)
+	defer e.Close()
+	f := e.ExtractMetadata("./testdata/20190404_131804.jpg", "./testdata/20190404_131804.jpg")
+	assert.Equal(t, 2, len(f))
+	assert.Nil(t, f[0].Err)
+	assert.Nil(t, f[1].Err)
+	f = e.ExtractMetadata("./testdata/nonExisting.bla")
+	assert.Equal(t, 1, len(f))
+	assert.NotNil(t, f[0].Err)
+	f = e.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(f))
+	assert.Nil(t, f[0].Err)
+}
+
+func TestSplitReadyToken(t *testing.T) {
+	rt := string(readyToken)
+	var tcs = []struct {
+		tcID    string
+		in      string
+		expOk   bool
+		expVals []string
+	}{
+		{"mono", "a" + rt, true, []string{"a"}},
+		{"multi", "a" + rt + "b" + rt, true, []string{"a", "b"}},
+		{"empty", "", true, []string{}},
+		{"monoNoFinalToken", "a", false, []string{}},
+		{"multiNoFinalToken", "a" + rt + "b", false, []string{}},
+		{"emptyWithToken", rt, true, []string{""}},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.tcID, func(t *testing.T) {
+			sc := bufio.NewScanner(strings.NewReader(tc.in))
+			sc.Split(splitReadyToken)
+			vals := []string{}
+			for sc.Scan() {
+				vals = append(vals, sc.Text())
+			}
+			assert.Equal(t, tc.expOk, sc.Err() == nil)
+			if tc.expOk {
+				assert.Equal(t, tc.expVals, vals)
+			}
+		})
+	}
+}
