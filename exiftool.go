@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"sync"
 )
@@ -98,11 +97,6 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 
 	for i, f := range files {
 		fms[i].File = f
-
-		if _, err := os.Stat(f); err != nil {
-			fms[i].Err = err
-			continue
-		}
 
 		for _, curA := range extractArgs {
 			fmt.Fprintln(e.stdin, curA)

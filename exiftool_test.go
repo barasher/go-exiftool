@@ -49,6 +49,7 @@ func TestSingleExtract(t *testing.T) {
 		{"single", []string{"./testdata/20190404_131804.jpg"}, []bool{true}},
 		{"multiple", []string{"./testdata/20190404_131804.jpg", "./testdata/20190404_131804.jpg"}, []bool{true, true}},
 		{"nonExisting", []string{"./testdata/nonExisting"}, []bool{false}},
+		{"empty", []string{"./testdata/empty.jpg"}, []bool{true}},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.tcID, func(t *testing.T) {
@@ -110,4 +111,56 @@ func TestSplitReadyToken(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCloseNominal(t *testing.T) {
+	var rClosed, wClosed bool
+	r := readWriteCloserMock{closed: &rClosed}
+	w := readWriteCloserMock{closed: &wClosed}
+	e := Exiftool{stdin: r, stdout: w}
+	assert.Nil(t, e.Close())
+	assert.True(t, rClosed)
+	assert.True(t, wClosed)
+}
+
+func TestCloseErrorOnStdin(t *testing.T) {
+	var rClosed, wClosed bool
+	r := readWriteCloserMock{closed: &rClosed, closeErr: fmt.Errorf("error")}
+	w := readWriteCloserMock{closed: &wClosed}
+	e := Exiftool{stdin: r, stdout: w}
+	assert.NotNil(t, e.Close())
+	assert.True(t, rClosed)
+	assert.True(t, wClosed)
+}
+
+func TestCloseErrorOnStdout(t *testing.T) {
+	var rClosed, wClosed bool
+	r := readWriteCloserMock{closed: &rClosed}
+	w := readWriteCloserMock{closed: &wClosed, closeErr: fmt.Errorf("error")}
+	e := Exiftool{stdin: r, stdout: w}
+	assert.NotNil(t, e.Close())
+	assert.True(t, rClosed)
+	assert.True(t, wClosed)
+}
+
+type readWriteCloserMock struct {
+	writeInt int
+	writeErr error
+	readInt  int
+	readErr  error
+	closeErr error
+	closed   *bool
+}
+
+func (e readWriteCloserMock) Write(p []byte) (n int, err error) {
+	return e.writeInt, e.writeErr
+}
+
+func (e readWriteCloserMock) Read(p []byte) (n int, err error) {
+	return e.readInt, e.readErr
+}
+
+func (e readWriteCloserMock) Close() error {
+	*(e.closed) = true
+	return e.closeErr
 }
