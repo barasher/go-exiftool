@@ -6,7 +6,7 @@ import (
 	"github.com/barasher/go-exiftool"
 )
 
-func ExampleExiftool_ParseMetadata() {
+func ExampleExiftool() {
 	et, err := exiftool.NewExiftool()
 	if err != nil {
 		fmt.Printf("Error when intializing: %v\n", err)
