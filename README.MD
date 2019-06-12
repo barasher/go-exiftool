@@ -7,6 +7,10 @@
 
 **go-exiftool** is a golang library that wraps [ExifTool](https://www.sno.phy.queensu.ca/~phil/exiftool/).
 
+[ExifTool](https://www.sno.phy.queensu.ca/~phil/exiftool/)'s purpose is to extract as much metadata as possible (EXIF, IPTC, XMP, GPS, ...) from [a lots of differents file types](https://www.sno.phy.queensu.ca/~phil/exiftool/#supported) (Office documents, pictures, movies, PDF, ...).
+
+**go-exiftool** uses [ExifTool](https://www.sno.phy.queensu.ca/~phil/exiftool/)'s *`stay_open`* feature to [optimize performance](https://www.sno.phy.queensu.ca/~phil/exiftool/#performance).
+
 ## Requirements
 
 **go-exiftool** needs [ExifTool](https://www.sno.phy.queensu.ca/~phil/exiftool/) to be installed.
