@@ -27,15 +27,6 @@ type Exiftool struct {
 	buferr  bytes.Buffer
 }
 
-// FileMetadata is a structure that represents an exiftool extraction. File contains the
-// filename that had to be extracted. If anything went wrong, Err will not be nil. Fields
-// stores extracted fields.
-type FileMetadata struct {
-	File   string
-	Fields map[string]interface{}
-	Err    error
-}
-
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
 // wrong, a non empty error will be returned
 func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
