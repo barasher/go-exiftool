@@ -59,3 +59,9 @@ Output :
 [CreateDate] 2019:04:04 13:18:03
 (...)
 ```
+
+## Changelog
+
+- v1.1.0 : initial release
+- [v1.1.1](https://github.com/barasher/go-exiftool/milestone/2)
+  - [add typed getters for filemetadata fields](https://github.com/barasher/go-exiftool/issues/2)
