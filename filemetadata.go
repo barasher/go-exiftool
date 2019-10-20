@@ -13,7 +13,9 @@ const (
 )
 
 var defaultStrings = []string{}
-var KeyNotFoundError = errors.New("key not found")
+
+// ErrKeyNotFound is a sentinel error used when a queried key does not exist
+var ErrKeyNotFound = errors.New("key not found")
 
 // FileMetadata is a structure that represents an exiftool extraction. File contains the
 // filename that had to be extracted. If anything went wrong, Err will not be nil. Fields
@@ -24,12 +26,12 @@ type FileMetadata struct {
 	Err    error
 }
 
-// GetString returns a field value as string and an error if one occured.
+// GetString returns a field value as string and an error if one occurred.
 // KeyNotFoundError will be returned if the key can't be found
 func (fm FileMetadata) GetString(k string) (string, error) {
 	v, found := fm.Fields[k]
 	if !found {
-		return defaultString, KeyNotFoundError
+		return defaultString, ErrKeyNotFound
 	}
 	return toString(v), nil
 }
@@ -47,12 +49,12 @@ func toString(v interface{}) string {
 	}
 }
 
-// GetFloat returns a field value as float64 and an error if one occured.
+// GetFloat returns a field value as float64 and an error if one occurred.
 // KeyNotFoundError will be returned if the key can't be found.
 func (fm FileMetadata) GetFloat(k string) (float64, error) {
 	v, found := fm.Fields[k]
 	if !found {
-		return defaultFloat, KeyNotFoundError
+		return defaultFloat, ErrKeyNotFound
 	}
 	switch v.(type) {
 	case string:
@@ -75,13 +77,13 @@ func toFloatFallback(str string) (float64, error) {
 	return f, nil
 }
 
-// GetInt returns a field value as int64 and an error if one occured.
+// GetInt returns a field value as int64 and an error if one occurred.
 // KeyNotFoundError will be returned if the key can't be found, ParseError if
 // a parsing error occurs.
 func (fm FileMetadata) GetInt(k string) (int64, error) {
 	v, found := fm.Fields[k]
 	if !found {
-		return defaultInt, KeyNotFoundError
+		return defaultInt, ErrKeyNotFound
 	}
 	switch v.(type) {
 	case string:
@@ -105,12 +107,12 @@ func toIntFallback(str string) (int64, error) {
 	return f, nil
 }
 
-// GetStrings returns a field value as []string and an error if one occured.
+// GetStrings returns a field value as []string and an error if one occurred.
 // KeyNotFoundError will be returned if the key can't be found.
 func (fm FileMetadata) GetStrings(k string) ([]string, error) {
 	v, found := fm.Fields[k]
 	if !found {
-		return defaultStrings, KeyNotFoundError
+		return defaultStrings, ErrKeyNotFound
 	}
 	switch v.(type) {
 	case []interface{}:

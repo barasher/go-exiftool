@@ -31,7 +31,7 @@ func TestGetInt(t *testing.T) {
 		{"stringMono", true, nil, int64(0)},
 		{"float", false, nil, int64(3)},
 		{"integer", false, nil, int64(42)},
-		{"unexisting", true, KeyNotFoundError, int64(0)},
+		{"unexisting", true, ErrKeyNotFound, int64(0)},
 		{"strInt", false, nil, int64(84)},
 		{"int32", false, nil, int64(32)},
 	}
@@ -61,7 +61,7 @@ func TestGetFloat(t *testing.T) {
 		{"stringMono", true, nil, float64(0.0)},
 		{"float", false, nil, float64(3.14)},
 		{"integer", false, nil, float64(42)},
-		{"unexisting", true, KeyNotFoundError, float64(0)},
+		{"unexisting", true, ErrKeyNotFound, float64(0)},
 		{"strFloat", false, nil, float64(6.28)},
 		{"float32", false, nil, float64(32.32)},
 	}
@@ -92,7 +92,7 @@ func TestGetString(t *testing.T) {
 		{"float", false, nil, "3.14"},
 		{"integer", false, nil, "42"},
 		{"unsupported", false, nil, "22"},
-		{"unexisting", true, KeyNotFoundError, ""},
+		{"unexisting", true, ErrKeyNotFound, ""},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.inKey, func(t *testing.T) {
@@ -121,7 +121,7 @@ func TestGetStrings(t *testing.T) {
 		{"float", false, nil, []string{"3.14"}},
 		{"integer", false, nil, []string{"42"}},
 		{"unsupported", false, nil, []string{"22"}},
-		{"unexisting", true, KeyNotFoundError, []string{}},
+		{"unexisting", true, ErrKeyNotFound, []string{}},
 		{"array", false, nil, []string{"str", "64.64", "32.32", "64", "true"}},
 	}
 	for _, tc := range tcs {
