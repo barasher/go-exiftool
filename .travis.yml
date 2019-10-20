@@ -8,8 +8,5 @@ before_install:
   - sudo apt-get install -y exiftool
   - env GO111MODULE=on go get -v
 
-install:
-  - go get github.com/mattn/goveralls
-
 script:
-  - env GO111MODULE=on $GOPATH/bin/goveralls -service=travis-ci
+  - env GO111MODULE=on go test ./...
