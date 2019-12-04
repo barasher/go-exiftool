@@ -33,6 +33,7 @@ func (fm FileMetadata) GetString(k string) (string, error) {
 	if !found {
 		return defaultString, ErrKeyNotFound
 	}
+
 	return toString(v), nil
 }
 
@@ -56,6 +57,7 @@ func (fm FileMetadata) GetFloat(k string) (float64, error) {
 	if !found {
 		return defaultFloat, ErrKeyNotFound
 	}
+
 	switch v := v.(type) {
 	case string:
 		return toFloatFallback(v)
@@ -74,6 +76,7 @@ func toFloatFallback(str string) (float64, error) {
 	if err != nil {
 		return defaultFloat, fmt.Errorf("float64 parsing error (%v): %w", str, err)
 	}
+
 	return f, nil
 }
 
@@ -85,6 +88,7 @@ func (fm FileMetadata) GetInt(k string) (int64, error) {
 	if !found {
 		return defaultInt, ErrKeyNotFound
 	}
+
 	switch v := v.(type) {
 	case string:
 		return toIntFallback(v)
@@ -96,7 +100,6 @@ func (fm FileMetadata) GetInt(k string) (int64, error) {
 		str := fmt.Sprintf("%v", v)
 		return toIntFallback(str)
 	}
-
 }
 
 func toIntFallback(str string) (int64, error) {
@@ -104,6 +107,7 @@ func toIntFallback(str string) (int64, error) {
 	if err != nil {
 		return defaultInt, fmt.Errorf("int64 parsing error (%v): %w", str, err)
 	}
+
 	return f, nil
 }
 
@@ -114,13 +118,16 @@ func (fm FileMetadata) GetStrings(k string) ([]string, error) {
 	if !found {
 		return defaultStrings, ErrKeyNotFound
 	}
+
 	switch v := v.(type) {
 	case []interface{}:
 		is := v
 		res := make([]string, len(is))
+
 		for i, v2 := range is {
 			res[i] = toString(v2)
 		}
+
 		return res, nil
 	default:
 		return []string{toString(v)}, nil
