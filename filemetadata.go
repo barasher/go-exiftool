@@ -37,13 +37,13 @@ func (fm FileMetadata) GetString(k string) (string, error) {
 }
 
 func toString(v interface{}) string {
-	switch v.(type) {
+	switch v := v.(type) {
 	case string:
-		return v.(string)
+		return v
 	case float64:
-		return strconv.FormatFloat(v.(float64), 'f', -1, 64)
+		return strconv.FormatFloat(v, 'f', -1, 64)
 	case int64:
-		return strconv.FormatInt(v.(int64), 10)
+		return strconv.FormatInt(v, 10)
 	default:
 		return fmt.Sprintf("%v", v)
 	}
@@ -56,13 +56,13 @@ func (fm FileMetadata) GetFloat(k string) (float64, error) {
 	if !found {
 		return defaultFloat, ErrKeyNotFound
 	}
-	switch v.(type) {
+	switch v := v.(type) {
 	case string:
-		return toFloatFallback(v.(string))
+		return toFloatFallback(v)
 	case float64:
-		return v.(float64), nil
+		return v, nil
 	case int64:
-		return float64(v.(int64)), nil
+		return float64(v), nil
 	default:
 		str := fmt.Sprintf("%v", v)
 		return toFloatFallback(str)
@@ -85,13 +85,13 @@ func (fm FileMetadata) GetInt(k string) (int64, error) {
 	if !found {
 		return defaultInt, ErrKeyNotFound
 	}
-	switch v.(type) {
+	switch v := v.(type) {
 	case string:
-		return toIntFallback(v.(string))
+		return toIntFallback(v)
 	case float64:
-		return int64(v.(float64)), nil
+		return int64(v), nil
 	case int64:
-		return v.(int64), nil
+		return v, nil
 	default:
 		str := fmt.Sprintf("%v", v)
 		return toIntFallback(str)
@@ -114,9 +114,9 @@ func (fm FileMetadata) GetStrings(k string) ([]string, error) {
 	if !found {
 		return defaultStrings, ErrKeyNotFound
 	}
-	switch v.(type) {
+	switch v := v.(type) {
 	case []interface{}:
-		is := v.([]interface{})
+		is := v
 		res := make([]string, len(is))
 		for i, v2 := range is {
 			res[i] = toString(v2)
