@@ -58,6 +58,7 @@ func TestSingleExtract(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
+		tc := tc // Pin variable
 		t.Run(tc.tcID, func(t *testing.T) {
 			e, err := NewExiftool()
 			assert.Nilf(t, err, "error not nil: %v", err)
@@ -114,6 +115,7 @@ func TestSplitReadyToken(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
+		tc := tc // Pin variable
 		t.Run(tc.tcID, func(t *testing.T) {
 			sc := bufio.NewScanner(strings.NewReader(tc.in))
 			sc.Split(splitReadyToken)

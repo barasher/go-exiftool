@@ -36,6 +36,7 @@ func TestGetInt(t *testing.T) {
 		{"int32", false, nil, int64(32)},
 	}
 	for _, tc := range tcs {
+		tc := tc // Pin variable
 		t.Run(tc.inKey, func(t *testing.T) {
 			v, err := fm.GetInt(tc.inKey)
 			if tc.expIsError {
@@ -66,6 +67,7 @@ func TestGetFloat(t *testing.T) {
 		{"float32", false, nil, float64(32.32)},
 	}
 	for _, tc := range tcs {
+		tc := tc // Pin variable
 		t.Run(tc.inKey, func(t *testing.T) {
 			v, err := fm.GetFloat(tc.inKey)
 			if tc.expIsError {
@@ -95,6 +97,7 @@ func TestGetString(t *testing.T) {
 		{"unexisting", true, ErrKeyNotFound, ""},
 	}
 	for _, tc := range tcs {
+		tc := tc // Pin variable
 		t.Run(tc.inKey, func(t *testing.T) {
 			v, err := fm.GetString(tc.inKey)
 			if tc.expIsError {
@@ -125,6 +128,7 @@ func TestGetStrings(t *testing.T) {
 		{"array", false, nil, []string{"str", "64.64", "32.32", "64", "true"}},
 	}
 	for _, tc := range tcs {
+		tc := tc // Pin variable
 		t.Run(tc.inKey, func(t *testing.T) {
 			v, err := fm.GetStrings(tc.inKey)
 			if tc.expIsError {
