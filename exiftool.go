@@ -27,6 +27,8 @@ type Config struct {
 	readyTokenLen int
 }
 
+// NewExiftoolConfig creates a new default configuration to be used with Exiftool. Pass configuration functions
+// to change the default configuration
 func NewExiftoolConfig(opts ...func(*Config) error) (*Config, error) {
 	config := Config{
 		binary:        "exiftool",
@@ -60,7 +62,7 @@ type Exiftool struct {
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
-// wrong, a non empty error will be returned. config is nil, it will use a default config
+// wrong, a non empty error will be returned. If config is nil, it will use a default config
 func NewExiftool(config *Config, opts ...func(*Exiftool) error) (*Exiftool, error) {
 	e := Exiftool{}
 
