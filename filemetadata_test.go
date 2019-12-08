@@ -7,21 +7,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var fm = FileMetadata{
-	Fields: map[string]interface{}{
-		"stringMono":  "stringMonoValue",
-		"float":       float64(3.14),
-		"integer":     int64(42),
-		"unsupported": int32(22),
-		"strFloat":    "6.28",
-		"strInt":      "84",
-		"int32":       int32(32),
-		"float32":     float32(32.32),
-		"array":       []interface{}{"str", float64(64.64), float32(32.32), int64(64), true},
-	},
+func getExpectedFileMetadata() FileMetadata {
+	return FileMetadata{
+		Fields: map[string]interface{}{
+			"stringMono":  "stringMonoValue",
+			"float":       float64(3.14),
+			"integer":     int64(42),
+			"unsupported": int32(22),
+			"strFloat":    "6.28",
+			"strInt":      "84",
+			"int32":       int32(32),
+			"float32":     float32(32.32),
+			"array":       []interface{}{"str", float64(64.64), float32(32.32), int64(64), true},
+		},
+	}
 }
-
 func TestGetInt(t *testing.T) {
+	fm := getExpectedFileMetadata()
+
 	tcs := []struct {
 		inKey      string
 		expIsError bool
@@ -53,6 +56,8 @@ func TestGetInt(t *testing.T) {
 }
 
 func TestGetFloat(t *testing.T) {
+	fm := getExpectedFileMetadata()
+
 	tcs := []struct {
 		inKey      string
 		expIsError bool
@@ -84,6 +89,8 @@ func TestGetFloat(t *testing.T) {
 }
 
 func TestGetString(t *testing.T) {
+	fm := getExpectedFileMetadata()
+
 	tcs := []struct {
 		inKey      string
 		expIsError bool
@@ -114,6 +121,8 @@ func TestGetString(t *testing.T) {
 }
 
 func TestGetStrings(t *testing.T) {
+	fm := getExpectedFileMetadata()
+
 	tcs := []struct {
 		inKey      string
 		expIsError bool

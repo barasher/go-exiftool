@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewExiftoolEmpty(t *testing.T) {
-	e, err := NewExiftool()
+	e, err := NewExiftool(nil)
 	assert.Nil(t, err)
 
 	defer e.Close()
@@ -29,7 +29,7 @@ func TestNewExifToolOptOk(t *testing.T) {
 		return nil
 	}
 
-	e, err := NewExiftool(f1, f2)
+	e, err := NewExiftool(nil, f1, f2)
 	assert.Nil(t, err)
 
 	defer e.Close()
@@ -42,7 +42,7 @@ func TestNewExifToolOptKo(t *testing.T) {
 	f := func(*Exiftool) error {
 		return fmt.Errorf("err")
 	}
-	_, err := NewExiftool(f)
+	_, err := NewExiftool(nil, f)
 	assert.NotNil(t, err)
 }
 func TestSingleExtract(t *testing.T) {
@@ -60,7 +60,7 @@ func TestSingleExtract(t *testing.T) {
 	for _, tc := range tcs {
 		tc := tc // Pin variable
 		t.Run(tc.tcID, func(t *testing.T) {
-			e, err := NewExiftool()
+			e, err := NewExiftool(nil)
 			assert.Nilf(t, err, "error not nil: %v", err)
 			defer e.Close()
 			fms := e.ExtractMetadata(tc.inFiles...)
@@ -74,7 +74,7 @@ func TestSingleExtract(t *testing.T) {
 }
 
 func TestMultiExtract(t *testing.T) {
-	e, err := NewExiftool()
+	e, err := NewExiftool(nil)
 
 	assert.Nilf(t, err, "error not nil: %v", err)
 
@@ -98,6 +98,7 @@ func TestMultiExtract(t *testing.T) {
 }
 
 func TestSplitReadyToken(t *testing.T) {
+	readyToken := []byte("{ready}\n")
 	rt := string(readyToken)
 
 	var tcs = []struct {
@@ -118,7 +119,7 @@ func TestSplitReadyToken(t *testing.T) {
 		tc := tc // Pin variable
 		t.Run(tc.tcID, func(t *testing.T) {
 			sc := bufio.NewScanner(strings.NewReader(tc.in))
-			sc.Split(splitReadyToken)
+			sc.Split(splitReadyToken(readyToken))
 			vals := []string{}
 			for sc.Scan() {
 				vals = append(vals, sc.Text())
@@ -134,9 +135,12 @@ func TestSplitReadyToken(t *testing.T) {
 func TestCloseNominal(t *testing.T) {
 	var rClosed, wClosed bool
 
+	config, err := NewExiftoolConfig()
+	assert.NoError(t, err)
+
 	r := readWriteCloserMock{closed: &rClosed}
 	w := readWriteCloserMock{closed: &wClosed}
-	e := Exiftool{stdin: r, stdout: w}
+	e := Exiftool{config: config, stdin: r, stdout: w}
 
 	assert.Nil(t, e.Close())
 	assert.True(t, rClosed)
@@ -146,9 +150,12 @@ func TestCloseNominal(t *testing.T) {
 func TestCloseErrorOnStdin(t *testing.T) {
 	var rClosed, wClosed bool
 
+	config, err := NewExiftoolConfig()
+	assert.NoError(t, err)
+
 	r := readWriteCloserMock{closed: &rClosed, closeErr: fmt.Errorf("error")}
 	w := readWriteCloserMock{closed: &wClosed}
-	e := Exiftool{stdin: r, stdout: w}
+	e := Exiftool{config: config, stdin: r, stdout: w}
 
 	assert.NotNil(t, e.Close())
 	assert.True(t, rClosed)
@@ -158,9 +165,12 @@ func TestCloseErrorOnStdin(t *testing.T) {
 func TestCloseErrorOnStdout(t *testing.T) {
 	var rClosed, wClosed bool
 
+	config, err := NewExiftoolConfig()
+	assert.NoError(t, err)
+
 	r := readWriteCloserMock{closed: &rClosed}
 	w := readWriteCloserMock{closed: &wClosed, closeErr: fmt.Errorf("error")}
-	e := Exiftool{stdin: r, stdout: w}
+	e := Exiftool{config: config, stdin: r, stdout: w}
 
 	assert.NotNil(t, e.Close())
 	assert.True(t, rClosed)

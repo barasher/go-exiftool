@@ -12,8 +12,6 @@ const (
 	defaultInt    = int64(0)
 )
 
-var defaultStrings = []string{}
-
 // ErrKeyNotFound is a sentinel error used when a queried key does not exist
 var ErrKeyNotFound = errors.New("key not found")
 
@@ -116,7 +114,7 @@ func toIntFallback(str string) (int64, error) {
 func (fm FileMetadata) GetStrings(k string) ([]string, error) {
 	v, found := fm.Fields[k]
 	if !found {
-		return defaultStrings, ErrKeyNotFound
+		return []string{}, ErrKeyNotFound
 	}
 
 	switch v := v.(type) {
