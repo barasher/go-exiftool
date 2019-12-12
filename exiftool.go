@@ -141,13 +141,11 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 	for i, f := range files {
 		fms[i].File = f
 
-		if _, err := os.Stat(f); err != nil {
-			if err == os.ErrNotExist {
-				fms[i].Err = ErrNotExist
-			} else {
-				fms[i].Err = err
-			}
-
+		if _, err := os.Stat(f); os.IsNotExist(err) {
+			fms[i].Err = ErrNotExist
+			continue
+		} else {
+			fms[i].Err = err
 			continue
 		}
 
