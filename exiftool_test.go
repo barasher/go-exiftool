@@ -29,7 +29,7 @@ func TestNewExifToolOptOk(t *testing.T) {
 		return nil
 	}
 
-	e, err := NewExiftool(nil, f1, f2)
+	e, err := NewExiftool(f1, f2)
 	assert.Nil(t, err)
 
 	defer e.Close()
@@ -42,7 +42,7 @@ func TestNewExifToolOptKo(t *testing.T) {
 	f := func(*Exiftool) error {
 		return fmt.Errorf("err")
 	}
-	_, err := NewExiftool(nil, f)
+	_, err := NewExiftool(f)
 	assert.NotNil(t, err)
 }
 func TestSingleExtract(t *testing.T) {
