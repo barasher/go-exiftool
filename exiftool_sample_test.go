@@ -7,7 +7,7 @@ import (
 )
 
 func ExampleExiftool() {
-	et, err := exiftool.NewExiftool(nil)
+	et, err := exiftool.NewExiftool()
 	if err != nil {
 		fmt.Printf("Error when intializing: %v\n", err)
 		return

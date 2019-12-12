@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewExiftoolEmpty(t *testing.T) {
-	e, err := NewExiftool(nil)
+	e, err := NewExiftool()
 	assert.Nil(t, err)
 
 	defer e.Close()
@@ -60,7 +60,7 @@ func TestSingleExtract(t *testing.T) {
 	for _, tc := range tcs {
 		tc := tc // Pin variable
 		t.Run(tc.tcID, func(t *testing.T) {
-			e, err := NewExiftool(nil)
+			e, err := NewExiftool()
 			assert.Nilf(t, err, "error not nil: %v", err)
 			defer e.Close()
 			fms := e.ExtractMetadata(tc.inFiles...)
@@ -74,7 +74,7 @@ func TestSingleExtract(t *testing.T) {
 }
 
 func TestMultiExtract(t *testing.T) {
-	e, err := NewExiftool(nil)
+	e, err := NewExiftool()
 
 	assert.Nilf(t, err, "error not nil: %v", err)
 

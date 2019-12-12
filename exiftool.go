@@ -62,8 +62,8 @@ type Exiftool struct {
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
-// wrong, a non empty error will be returned. If config is nil, it will use a default config
-func NewExiftool(config *Config, opts ...func(*Exiftool) error) (*Exiftool, error) {
+// wrong, a non empty error will be returned.
+func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	e := Exiftool{}
 
 	for _, opt := range opts {
@@ -75,7 +75,7 @@ func NewExiftool(config *Config, opts ...func(*Exiftool) error) (*Exiftool, erro
 	if e.config == nil {
 		defaultConfig, err := NewExiftoolConfig()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unable to create default configuration: %w", err)
 		}
 
 		e.config = defaultConfig
