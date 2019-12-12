@@ -44,7 +44,7 @@ func NewExiftoolConfig(opts ...func(*config) error) (*config, error) {
 
 	for _, opt := range opts {
 		if err := opt(&config); err != nil {
-			return nil, fmt.Errorf("Error setting configuration options: %w", err)
+			return nil, fmt.Errorf("error setting configuration options: %w", err)
 		}
 	}
 
@@ -141,11 +141,14 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 	for i, f := range files {
 		fms[i].File = f
 
-		if _, err := os.Stat(f); os.IsNotExist(err) {
-			fms[i].Err = ErrNotExist
-			continue
-		} else {
+		if _, err := os.Stat(f); err != nil {
+			if os.IsNotExist(err) {
+				fms[i].Err = ErrNotExist
+				continue
+			}
+
 			fms[i].Err = err
+
 			continue
 		}
 
