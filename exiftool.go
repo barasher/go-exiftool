@@ -16,8 +16,8 @@ import (
 // ErrNotExist is a sentinel error for non existing file
 var ErrNotExist = errors.New("file does not exist")
 
-// Config contains the configuration used by the module
-type Config struct {
+// config contains the configuration used by the module
+type config struct {
 	binary        string
 	executeArg    string
 	initArgs      []string
@@ -29,8 +29,8 @@ type Config struct {
 
 // NewExiftoolConfig creates a new default configuration to be used with Exiftool. Pass configuration functions
 // to change the default configuration
-func NewExiftoolConfig(opts ...func(*Config) error) (*Config, error) {
-	config := Config{
+func NewExiftoolConfig(opts ...func(*config) error) (*config, error) {
+	config := config{
 		binary:        "exiftool",
 		executeArg:    "-execute",
 		initArgs:      []string{"-stay_open", "True", "-@", "-", "-common_args"},
@@ -55,7 +55,7 @@ func NewExiftoolConfig(opts ...func(*Config) error) (*Config, error) {
 
 // Exiftool is the exiftool utility wrapper
 type Exiftool struct {
-	config  *Config
+	config  *config
 	lock    sync.Mutex
 	stdin   io.WriteCloser
 	stdout  io.ReadCloser
