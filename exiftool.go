@@ -41,13 +41,14 @@ func NewExiftoolConfig(opts ...func(*Config) error) (*Config, error) {
 	}
 
 	config.closeArgs = []string{"-stay_open", "False", config.executeArg}
-	config.readyTokenLen = len(config.readyToken)
 
 	for _, opt := range opts {
 		if err := opt(&config); err != nil {
 			return nil, fmt.Errorf("Error setting configuration options: %w", err)
 		}
 	}
+
+	config.readyTokenLen = len(config.readyToken)
 
 	return &config, nil
 }
