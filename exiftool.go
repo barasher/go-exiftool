@@ -10,7 +10,7 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // ErrNotExist is a sentinel error for non existing file
@@ -45,7 +45,7 @@ func NewExiftoolConfig(opts ...func(*Config) error) (*Config, error) {
 
 	for _, opt := range opts {
 		if err := opt(&config); err != nil {
-			return nil, errors.Wrap(err, "Error setting configuration options")
+			return nil, fmt.Errorf("Error setting configuration options: %w", err)
 		}
 	}
 
