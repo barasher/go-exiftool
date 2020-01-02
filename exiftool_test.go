@@ -119,7 +119,7 @@ func TestSplitReadyToken(t *testing.T) {
 		tc := tc // Pin variable
 		t.Run(tc.tcID, func(t *testing.T) {
 			sc := bufio.NewScanner(strings.NewReader(tc.in))
-			sc.Split(splitReadyToken(readyToken))
+			sc.Split(splitReadyToken)
 			vals := []string{}
 			for sc.Scan() {
 				vals = append(vals, sc.Text())
@@ -135,12 +135,9 @@ func TestSplitReadyToken(t *testing.T) {
 func TestCloseNominal(t *testing.T) {
 	var rClosed, wClosed bool
 
-	config, err := NewExiftoolConfig()
-	assert.NoError(t, err)
-
 	r := readWriteCloserMock{closed: &rClosed}
 	w := readWriteCloserMock{closed: &wClosed}
-	e := Exiftool{config: config, stdin: r, stdout: w}
+	e := Exiftool{stdin: r, stdout: w}
 
 	assert.Nil(t, e.Close())
 	assert.True(t, rClosed)
@@ -150,12 +147,9 @@ func TestCloseNominal(t *testing.T) {
 func TestCloseErrorOnStdin(t *testing.T) {
 	var rClosed, wClosed bool
 
-	config, err := NewExiftoolConfig()
-	assert.NoError(t, err)
-
 	r := readWriteCloserMock{closed: &rClosed, closeErr: fmt.Errorf("error")}
 	w := readWriteCloserMock{closed: &wClosed}
-	e := Exiftool{config: config, stdin: r, stdout: w}
+	e := Exiftool{stdin: r, stdout: w}
 
 	assert.NotNil(t, e.Close())
 	assert.True(t, rClosed)
@@ -165,12 +159,9 @@ func TestCloseErrorOnStdin(t *testing.T) {
 func TestCloseErrorOnStdout(t *testing.T) {
 	var rClosed, wClosed bool
 
-	config, err := NewExiftoolConfig()
-	assert.NoError(t, err)
-
 	r := readWriteCloserMock{closed: &rClosed}
 	w := readWriteCloserMock{closed: &wClosed, closeErr: fmt.Errorf("error")}
-	e := Exiftool{config: config, stdin: r, stdout: w}
+	e := Exiftool{stdin: r, stdout: w}
 
 	assert.NotNil(t, e.Close())
 	assert.True(t, rClosed)

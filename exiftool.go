@@ -13,49 +13,19 @@ import (
 	"errors"
 )
 
+var binary = "exiftool"
+var executeArg = "-execute"
+var initArgs = []string{"-stay_open", "True", "-@", "-", "-common_args"}
+var extractArgs = []string{"-j"}
+var closeArgs = []string{"-stay_open", "False", executeArg}
+var readyToken = []byte("{ready}\n")
+var readyTokenLen = len(readyToken)
+
 // ErrNotExist is a sentinel error for non existing file
 var ErrNotExist = errors.New("file does not exist")
 
-// config contains the configuration used by the module
-type config struct {
-	binary        string
-	executeArg    string
-	initArgs      []string
-	extractArgs   []string
-	closeArgs     []string
-	readyToken    []byte
-	readyTokenLen int
-}
-
-// NewExiftoolConfig creates a new default configuration to be used with Exiftool. Pass configuration functions
-// to change the default configuration
-func NewExiftoolConfig(opts ...func(*config) error) (*config, error) {
-	config := config{
-		binary:        "exiftool",
-		executeArg:    "-execute",
-		initArgs:      []string{"-stay_open", "True", "-@", "-", "-common_args"},
-		extractArgs:   []string{"-j"},
-		closeArgs:     nil,
-		readyToken:    []byte("{ready}\n"),
-		readyTokenLen: 0,
-	}
-
-	config.closeArgs = []string{"-stay_open", "False", config.executeArg}
-
-	for _, opt := range opts {
-		if err := opt(&config); err != nil {
-			return nil, fmt.Errorf("error setting configuration options: %w", err)
-		}
-	}
-
-	config.readyTokenLen = len(config.readyToken)
-
-	return &config, nil
-}
-
 // Exiftool is the exiftool utility wrapper
 type Exiftool struct {
-	config  *config
 	lock    sync.Mutex
 	stdin   io.WriteCloser
 	stdout  io.ReadCloser
@@ -73,16 +43,7 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 		}
 	}
 
-	if e.config == nil {
-		defaultConfig, err := NewExiftoolConfig()
-		if err != nil {
-			return nil, fmt.Errorf("unable to create default configuration: %w", err)
-		}
-
-		e.config = defaultConfig
-	}
-
-	cmd := exec.Command(e.config.binary, e.config.initArgs...)
+	cmd := exec.Command(binary, initArgs...)
 
 	var err error
 	if e.stdin, err = cmd.StdinPipe(); err != nil {
@@ -94,7 +55,7 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	}
 
 	e.scanout = bufio.NewScanner(e.stdout)
-	e.scanout.Split(splitReadyToken(e.config.readyToken))
+	e.scanout.Split(splitReadyToken)
 
 	if err = cmd.Start(); err != nil {
 		return nil, fmt.Errorf("error when executing commande: %w", err)
@@ -108,7 +69,7 @@ func (e *Exiftool) Close() error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
-	for _, v := range e.config.closeArgs {
+	for _, v := range closeArgs {
 		_, err := fmt.Fprintln(e.stdin, v)
 		if err != nil {
 			return err
@@ -152,12 +113,12 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 			continue
 		}
 
-		for _, curA := range e.config.extractArgs {
+		for _, curA := range extractArgs {
 			fmt.Fprintln(e.stdin, curA)
 		}
 
 		fmt.Fprintln(e.stdin, f)
-		fmt.Fprintln(e.stdin, e.config.executeArg)
+		fmt.Fprintln(e.stdin, executeArg)
 
 		if !e.scanout.Scan() {
 			fms[i].Err = fmt.Errorf("nothing on stdout")
@@ -181,17 +142,15 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 	return fms
 }
 
-func splitReadyToken(readyToken []byte) func(data []byte, atEOF bool) (int, []byte, error) {
-	return func(data []byte, atEOF bool) (int, []byte, error) {
-		idx := bytes.Index(data, readyToken)
-		if idx == -1 {
-			if atEOF && len(data) > 0 {
-				return 0, data, fmt.Errorf("no final token found")
-			}
-
-			return 0, nil, nil
+func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
+	idx := bytes.Index(data, readyToken)
+	if idx == -1 {
+		if atEOF && len(data) > 0 {
+			return 0, data, fmt.Errorf("no final token found")
 		}
 
-		return idx + len(readyToken), data[:idx], nil
+		return 0, nil, nil
 	}
+
+	return idx + readyTokenLen, data[:idx], nil
 }
