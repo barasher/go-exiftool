@@ -7,21 +7,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var fm = FileMetadata{
-	Fields: map[string]interface{}{
-		"stringMono":  "stringMonoValue",
-		"float":       float64(3.14),
-		"integer":     int64(42),
-		"unsupported": int32(22),
-		"strFloat":    "6.28",
-		"strInt":      "84",
-		"int32":       int32(32),
-		"float32":     float32(32.32),
-		"array":       []interface{}{"str", float64(64.64), float32(32.32), int64(64), true},
-	},
+func getExpectedFileMetadata() FileMetadata {
+	return FileMetadata{
+		Fields: map[string]interface{}{
+			"stringMono":  "stringMonoValue",
+			"float":       float64(3.14),
+			"integer":     int64(42),
+			"unsupported": int32(22),
+			"strFloat":    "6.28",
+			"strInt":      "84",
+			"int32":       int32(32),
+			"float32":     float32(32.32),
+			"array":       []interface{}{"str", float64(64.64), float32(32.32), int64(64), true},
+		},
+	}
 }
-
 func TestGetInt(t *testing.T) {
+	fm := getExpectedFileMetadata()
+
 	tcs := []struct {
 		inKey      string
 		expIsError bool
@@ -36,6 +39,7 @@ func TestGetInt(t *testing.T) {
 		{"int32", false, nil, int64(32)},
 	}
 	for _, tc := range tcs {
+		tc := tc // Pin variable
 		t.Run(tc.inKey, func(t *testing.T) {
 			v, err := fm.GetInt(tc.inKey)
 			if tc.expIsError {
@@ -52,6 +56,8 @@ func TestGetInt(t *testing.T) {
 }
 
 func TestGetFloat(t *testing.T) {
+	fm := getExpectedFileMetadata()
+
 	tcs := []struct {
 		inKey      string
 		expIsError bool
@@ -66,6 +72,7 @@ func TestGetFloat(t *testing.T) {
 		{"float32", false, nil, float64(32.32)},
 	}
 	for _, tc := range tcs {
+		tc := tc // Pin variable
 		t.Run(tc.inKey, func(t *testing.T) {
 			v, err := fm.GetFloat(tc.inKey)
 			if tc.expIsError {
@@ -82,6 +89,8 @@ func TestGetFloat(t *testing.T) {
 }
 
 func TestGetString(t *testing.T) {
+	fm := getExpectedFileMetadata()
+
 	tcs := []struct {
 		inKey      string
 		expIsError bool
@@ -95,6 +104,7 @@ func TestGetString(t *testing.T) {
 		{"unexisting", true, ErrKeyNotFound, ""},
 	}
 	for _, tc := range tcs {
+		tc := tc // Pin variable
 		t.Run(tc.inKey, func(t *testing.T) {
 			v, err := fm.GetString(tc.inKey)
 			if tc.expIsError {
@@ -111,6 +121,8 @@ func TestGetString(t *testing.T) {
 }
 
 func TestGetStrings(t *testing.T) {
+	fm := getExpectedFileMetadata()
+
 	tcs := []struct {
 		inKey      string
 		expIsError bool
@@ -125,6 +137,7 @@ func TestGetStrings(t *testing.T) {
 		{"array", false, nil, []string{"str", "64.64", "32.32", "64", "true"}},
 	}
 	for _, tc := range tcs {
+		tc := tc // Pin variable
 		t.Run(tc.inKey, func(t *testing.T) {
 			v, err := fm.GetStrings(tc.inKey)
 			if tc.expIsError {

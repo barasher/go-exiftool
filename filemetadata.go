@@ -12,8 +12,6 @@ const (
 	defaultInt    = int64(0)
 )
 
-var defaultStrings = []string{}
-
 // ErrKeyNotFound is a sentinel error used when a queried key does not exist
 var ErrKeyNotFound = errors.New("key not found")
 
@@ -33,17 +31,18 @@ func (fm FileMetadata) GetString(k string) (string, error) {
 	if !found {
 		return defaultString, ErrKeyNotFound
 	}
+
 	return toString(v), nil
 }
 
 func toString(v interface{}) string {
-	switch v.(type) {
+	switch v := v.(type) {
 	case string:
-		return v.(string)
+		return v
 	case float64:
-		return strconv.FormatFloat(v.(float64), 'f', -1, 64)
+		return strconv.FormatFloat(v, 'f', -1, 64)
 	case int64:
-		return strconv.FormatInt(v.(int64), 10)
+		return strconv.FormatInt(v, 10)
 	default:
 		return fmt.Sprintf("%v", v)
 	}
@@ -56,13 +55,14 @@ func (fm FileMetadata) GetFloat(k string) (float64, error) {
 	if !found {
 		return defaultFloat, ErrKeyNotFound
 	}
-	switch v.(type) {
+
+	switch v := v.(type) {
 	case string:
-		return toFloatFallback(v.(string))
+		return toFloatFallback(v)
 	case float64:
-		return v.(float64), nil
+		return v, nil
 	case int64:
-		return float64(v.(int64)), nil
+		return float64(v), nil
 	default:
 		str := fmt.Sprintf("%v", v)
 		return toFloatFallback(str)
@@ -74,6 +74,7 @@ func toFloatFallback(str string) (float64, error) {
 	if err != nil {
 		return defaultFloat, fmt.Errorf("float64 parsing error (%v): %w", str, err)
 	}
+
 	return f, nil
 }
 
@@ -85,18 +86,18 @@ func (fm FileMetadata) GetInt(k string) (int64, error) {
 	if !found {
 		return defaultInt, ErrKeyNotFound
 	}
-	switch v.(type) {
+
+	switch v := v.(type) {
 	case string:
-		return toIntFallback(v.(string))
+		return toIntFallback(v)
 	case float64:
-		return int64(v.(float64)), nil
+		return int64(v), nil
 	case int64:
-		return v.(int64), nil
+		return v, nil
 	default:
 		str := fmt.Sprintf("%v", v)
 		return toIntFallback(str)
 	}
-
 }
 
 func toIntFallback(str string) (int64, error) {
@@ -104,6 +105,7 @@ func toIntFallback(str string) (int64, error) {
 	if err != nil {
 		return defaultInt, fmt.Errorf("int64 parsing error (%v): %w", str, err)
 	}
+
 	return f, nil
 }
 
@@ -112,15 +114,18 @@ func toIntFallback(str string) (int64, error) {
 func (fm FileMetadata) GetStrings(k string) ([]string, error) {
 	v, found := fm.Fields[k]
 	if !found {
-		return defaultStrings, ErrKeyNotFound
+		return []string{}, ErrKeyNotFound
 	}
-	switch v.(type) {
+
+	switch v := v.(type) {
 	case []interface{}:
-		is := v.([]interface{})
+		is := v
 		res := make([]string, len(is))
+
 		for i, v2 := range is {
 			res[i] = toString(v2)
 		}
+
 		return res, nil
 	default:
 		return []string{toString(v)}, nil
