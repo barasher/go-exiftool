@@ -18,7 +18,6 @@ var executeArg = "-execute"
 var initArgs = []string{"-stay_open", "True", "-@", "-", "-common_args"}
 var extractArgs = []string{"-j"}
 var closeArgs = []string{"-stay_open", "False", executeArg}
-var readyToken = []byte("{ready}\n")
 var readyTokenLen = len(readyToken)
 
 // ErrNotExist is a sentinel error for non existing file
