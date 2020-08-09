@@ -26,10 +26,11 @@ var ErrNotExist = errors.New("file does not exist")
 
 // Exiftool is the exiftool utility wrapper
 type Exiftool struct {
-	lock    sync.Mutex
-	stdin   io.WriteCloser
-	stdout  io.ReadCloser
-	scanout *bufio.Scanner
+	lock       sync.Mutex
+	stdin      io.WriteCloser
+	stdout     io.ReadCloser
+	scanout    *bufio.Scanner
+	bufferSize int
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
@@ -55,6 +56,8 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	}
 
 	e.scanout = bufio.NewScanner(e.stdout)
+	buf := make([]byte, 0, 64*1024)
+	e.scanout.Buffer(buf, e.bufferSize)
 	e.scanout.Split(splitReadyToken)
 
 	if err = cmd.Start(); err != nil {
@@ -62,6 +65,11 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	}
 
 	return &e, nil
+}
+
+// SetBufferSize changes the buffer size
+func (e *Exiftool) SetBufferSize(size int) {
+	e.bufferSize = size
 }
 
 // Close closes exiftool. If anything went wrong, a non empty error will be returned
