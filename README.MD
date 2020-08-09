@@ -60,6 +60,26 @@ Output :
 (...)
 ```
 
+
+## What if i get an error: "nothing on stdout"
+
+The reason might be when the token buffer is overflowed. 
+
+Try to increase the buffer size using function as a parameter by NewExiftool initialization:
+
+```go
+et, err = exiftool.NewExiftool(func(ex *exiftool.Exiftool) error {
+    ex.SetBufferSize(4064 * 1024)
+    return nil
+})
+
+if err != nil {
+    fmt.Printf("Error when intializing: %v\n", err)
+    return
+}
+defer et.Close()
+```
+
 ## Changelog
 
 - v1.1.0 : initial release
