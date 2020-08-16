@@ -137,7 +137,7 @@ func TestCloseNominal(t *testing.T) {
 
 	r := readWriteCloserMock{closed: &rClosed}
 	w := readWriteCloserMock{closed: &wClosed}
-	e := Exiftool{stdin: r, stdout: w}
+	e := Exiftool{stdin: r, stdMergedOut: w}
 
 	assert.Nil(t, e.Close())
 	assert.True(t, rClosed)
@@ -149,7 +149,7 @@ func TestCloseErrorOnStdin(t *testing.T) {
 
 	r := readWriteCloserMock{closed: &rClosed, closeErr: fmt.Errorf("error")}
 	w := readWriteCloserMock{closed: &wClosed}
-	e := Exiftool{stdin: r, stdout: w}
+	e := Exiftool{stdin: r, stdMergedOut: w}
 
 	assert.NotNil(t, e.Close())
 	assert.True(t, rClosed)
@@ -161,7 +161,7 @@ func TestCloseErrorOnStdout(t *testing.T) {
 
 	r := readWriteCloserMock{closed: &rClosed}
 	w := readWriteCloserMock{closed: &wClosed, closeErr: fmt.Errorf("error")}
-	e := Exiftool{stdin: r, stdout: w}
+	e := Exiftool{stdin: r, stdMergedOut: w}
 
 	assert.NotNil(t, e.Close())
 	assert.True(t, rClosed)

@@ -25,10 +25,10 @@ var ErrNotExist = errors.New("file does not exist")
 
 // Exiftool is the exiftool utility wrapper
 type Exiftool struct {
-	lock    sync.Mutex
-	stdin   io.WriteCloser
-	stdout  io.ReadCloser
-	scanout *bufio.Scanner
+	lock          sync.Mutex
+	stdin         io.WriteCloser
+	stdMergedOut  io.ReadCloser
+	scanMergedOut *bufio.Scanner
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
@@ -43,18 +43,19 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	}
 
 	cmd := exec.Command(binary, initArgs...)
+	r, w := io.Pipe()
+	e.stdMergedOut = r
+
+	cmd.Stdout = w
+	cmd.Stderr = w
 
 	var err error
 	if e.stdin, err = cmd.StdinPipe(); err != nil {
 		return nil, fmt.Errorf("error when piping stdin: %w", err)
 	}
 
-	if e.stdout, err = cmd.StdoutPipe(); err != nil {
-		return nil, fmt.Errorf("error when piping stdout: %w", err)
-	}
-
-	e.scanout = bufio.NewScanner(e.stdout)
-	e.scanout.Split(splitReadyToken)
+	e.scanMergedOut = bufio.NewScanner(r)
+	e.scanMergedOut.Split(splitReadyToken)
 
 	if err = cmd.Start(); err != nil {
 		return nil, fmt.Errorf("error when executing commande: %w", err)
@@ -76,8 +77,8 @@ func (e *Exiftool) Close() error {
 	}
 
 	var errs []error
-	if err := e.stdout.Close(); err != nil {
-		errs = append(errs, fmt.Errorf("error while closing stdout: %w", err))
+	if err := e.stdMergedOut.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("error while closing stdMergedOut: %w", err))
 	}
 
 	if err := e.stdin.Close(); err != nil {
@@ -119,19 +120,19 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 		fmt.Fprintln(e.stdin, f)
 		fmt.Fprintln(e.stdin, executeArg)
 
-		if !e.scanout.Scan() {
-			fms[i].Err = fmt.Errorf("nothing on stdout")
+		if !e.scanMergedOut.Scan() {
+			fms[i].Err = fmt.Errorf("nothing on stdMergedOut")
 			continue
 		}
 
-		if e.scanout.Err() != nil {
-			fms[i].Err = fmt.Errorf("error while reading stdout: %w", e.scanout.Err())
+		if e.scanMergedOut.Err() != nil {
+			fms[i].Err = fmt.Errorf("error while reading stdMergedOut: %w", e.scanMergedOut.Err())
 			continue
 		}
 
 		var m []map[string]interface{}
-		if err := json.Unmarshal(e.scanout.Bytes(), &m); err != nil {
-			fms[i].Err = fmt.Errorf("error during unmarshaling (%v): %w)", e.scanout.Bytes(), err)
+		if err := json.Unmarshal(e.scanMergedOut.Bytes(), &m); err != nil {
+			fms[i].Err = fmt.Errorf("error during unmarshaling (%v): %w)", e.scanMergedOut.Bytes(), err)
 			continue
 		}
 
