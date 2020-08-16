@@ -86,7 +86,7 @@ func (e *Exiftool) Close() error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("error while closing exiftool: %w", errs)
+		return fmt.Errorf("error while closing exiftool: %v", errs)
 	}
 
 	return nil
