@@ -65,3 +65,5 @@ Output :
 - v1.1.0 : initial release
 - [v1.1.1](https://github.com/barasher/go-exiftool/milestone/2)
   - [add typed getters for filemetadata fields](https://github.com/barasher/go-exiftool/issues/2)
+- [v1.1.2](https://github.com/barasher/go-exiftool/milestone/3)
+  - [add Mac & Windows support](https://github.com/barasher/go-exiftool/pull/7) (thank to @PROger4ever)
