@@ -132,7 +132,7 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 
 		var m []map[string]interface{}
 		if err := json.Unmarshal(e.scanMergedOut.Bytes(), &m); err != nil {
-			fms[i].Err = fmt.Errorf("error during unmarshaling (%v): %w)", e.scanMergedOut.Bytes(), err)
+			fms[i].Err = fmt.Errorf("error during unmarshaling (%v): %w)", string(e.scanMergedOut.Bytes()), err)
 			continue
 		}
 
