@@ -189,3 +189,27 @@ func (e readWriteCloserMock) Close() error {
 	*(e.closed) = true
 	return e.closeErr
 }
+
+func TestBuffer(t *testing.T) {
+	e, err := NewExiftool()
+	assert.Nil(t, err)
+	defer e.Close()
+	assert.Equal(t, false, e.bufferSet)
+
+	buf := make([]byte, 128)
+	assert.Nil(t, Buffer(buf, 64)(e))
+	assert.Equal(t, true, e.bufferSet)
+	assert.Equal(t, buf, e.buffer)
+	assert.Equal(t, 64, e.bufferMaxSize)
+}
+
+func TestNewExifTool_WithBuffer(t *testing.T) {
+	buf := make([]byte, 128*1000)
+	e, err := NewExiftool(Buffer(buf, 64*1000))
+	assert.Nil(t, err)
+	defer e.Close()
+
+	metas := e.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+}

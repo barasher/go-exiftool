@@ -29,6 +29,9 @@ type Exiftool struct {
 	stdin         io.WriteCloser
 	stdMergedOut  io.ReadCloser
 	scanMergedOut *bufio.Scanner
+	bufferSet     bool
+	buffer        []byte
+	bufferMaxSize int
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
@@ -55,6 +58,9 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	}
 
 	e.scanMergedOut = bufio.NewScanner(r)
+	if e.bufferSet {
+		e.scanMergedOut.Buffer(e.buffer, e.bufferMaxSize)
+	}
 	e.scanMergedOut.Split(splitReadyToken)
 
 	if err = cmd.Start(); err != nil {
@@ -153,4 +159,17 @@ func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
 	}
 
 	return idx + readyTokenLen, data[:idx], nil
+}
+
+// Buffer defines the buffer used to read from stdout and stderr, see https://golang.org/pkg/bufio/#Scanner.Buffer
+// Sample :
+//  buf := make([]byte, 128*1000)
+//  e, err := e, err := NewExiftool(Buffer(buf, 64*1000))
+func Buffer(buf []byte, max int) func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.bufferSet = true
+		e.buffer = buf
+		e.bufferMaxSize = max
+		return nil
+	}
 }
