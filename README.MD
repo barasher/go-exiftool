@@ -68,3 +68,5 @@ Output :
 - [v1.1.3](https://github.com/barasher/go-exiftool/milestone/3)
   - [add Mac & Windows support](https://github.com/barasher/go-exiftool/pull/7) (thank to @PROger4ever)
   - [increase errors readability](https://github.com/barasher/go-exiftool/pull/8) (thank to @PROger4ever)
+- [v1.2.0](https://github.com/barasher/go-exiftool/milestone/4)
+  - [add stdout and stderr buffer configuration capabilities](https://github.com/barasher/go-exiftool/issues/6) (thank to @asannikov)
