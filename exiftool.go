@@ -164,7 +164,7 @@ func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
 // Buffer defines the buffer used to read from stdout and stderr, see https://golang.org/pkg/bufio/#Scanner.Buffer
 // Sample :
 //  buf := make([]byte, 128*1000)
-//  e, err := e, err := NewExiftool(Buffer(buf, 64*1000))
+//  e, err := NewExiftool(Buffer(buf, 64*1000))
 func Buffer(buf []byte, max int) func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.bufferSet = true
