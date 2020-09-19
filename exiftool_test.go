@@ -98,7 +98,6 @@ func TestMultiExtract(t *testing.T) {
 }
 
 func TestSplitReadyToken(t *testing.T) {
-	readyToken := []byte("{ready}\n")
 	rt := string(readyToken)
 
 	var tcs = []struct {
