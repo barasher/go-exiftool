@@ -217,7 +217,7 @@ func TestCharset(t *testing.T) {
 	e, err := NewExiftool()
 	assert.Nil(t, err)
 	defer e.Close()
-	lengthBefore := len(e.extraInitArgs) 
+	lengthBefore := len(e.extraInitArgs)
 
 	assert.Nil(t, Charset("charsetValue")(e))
 	assert.Equal(t, lengthBefore+2, len(e.extraInitArgs))
