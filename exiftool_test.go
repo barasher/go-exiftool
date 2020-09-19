@@ -212,3 +212,25 @@ func TestNewExifTool_WithBuffer(t *testing.T) {
 	assert.Equal(t, 1, len(metas))
 	assert.Nil(t, metas[0].Err)
 }
+
+func TestCharset(t *testing.T) {
+	e, err := NewExiftool()
+	assert.Nil(t, err)
+	defer e.Close()
+	lengthBefore := len(e.extraInitArgs) 
+
+	assert.Nil(t, Charset("charsetValue")(e))
+	assert.Equal(t, lengthBefore+2, len(e.extraInitArgs))
+	assert.Equal(t, "-charset", e.extraInitArgs[lengthBefore])
+	assert.Equal(t, "charsetValue", e.extraInitArgs[lengthBefore+1])
+}
+
+func TestNewExifTool_WithCharset(t *testing.T) {
+	e, err := NewExiftool(Charset("filename=utf8"))
+	assert.Nil(t, err)
+	defer e.Close()
+
+	metas := e.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+}

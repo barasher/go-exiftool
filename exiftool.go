@@ -15,7 +15,7 @@ import (
 
 var binary = "exiftool"
 var executeArg = "-execute"
-var initArgs = []string{"-stay_open", "True", "-@", "-", "-common_args", "-charset", "filename=utf8"}
+var initArgs = []string{"-stay_open", "True", "-@", "-", "-common_args"}
 var extractArgs = []string{"-j"}
 var closeArgs = []string{"-stay_open", "False", executeArg}
 var readyTokenLen = len(readyToken)
@@ -32,6 +32,7 @@ type Exiftool struct {
 	bufferSet     bool
 	buffer        []byte
 	bufferMaxSize int
+	extraInitArgs []string
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
@@ -45,7 +46,8 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 		}
 	}
 
-	cmd := exec.Command(binary, initArgs...)
+	args := append(initArgs, e.extraInitArgs...)
+	cmd := exec.Command(binary, args...)
 	r, w := io.Pipe()
 	e.stdMergedOut = r
 
@@ -170,6 +172,16 @@ func Buffer(buf []byte, max int) func(*Exiftool) error {
 		e.bufferSet = true
 		e.buffer = buf
 		e.bufferMaxSize = max
+		return nil
+	}
+}
+
+// Charset defines the -charset value to pass to Exiftool, see https://exiftool.org/faq.html#Q10 and https://exiftool.org/faq.html#Q18
+// Sample :
+//   e, err := NewExiftool(Charset("filename=utf8"))
+func Charset(charset string) func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.extraInitArgs = append(e.extraInitArgs, "-charset", charset)
 		return nil
 	}
 }
