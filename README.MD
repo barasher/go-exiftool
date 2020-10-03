@@ -72,3 +72,5 @@ Output :
   - [add stdout and stderr buffer configuration capabilities](https://github.com/barasher/go-exiftool/issues/6) (thank to @asannikov)
 - [v1.3.0](https://github.com/barasher/go-exiftool/milestone/5)
   - Add functionnal option to set [ExifTool](https://www.sno.phy.queensu.ca/~phil/exiftool/)'s `-charset` parameter (thank to @PROger4ever)
+- [v1.3.1](https://github.com/barasher/go-exiftool/milestone/6)
+  - [fix line separator on macOS](https://github.com/barasher/go-exiftool/issues/16)
