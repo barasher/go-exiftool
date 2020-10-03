@@ -1,3 +1,3 @@
 package exiftool
 
-var readyToken = []byte("{ready}\r")
+var readyToken = []byte("{ready}\n")
