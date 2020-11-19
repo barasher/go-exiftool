@@ -74,3 +74,5 @@ Output :
   - Add functionnal option to set [ExifTool](https://www.sno.phy.queensu.ca/~phil/exiftool/)'s `-charset` parameter (thank to @PROger4ever)
 - [v1.3.1](https://github.com/barasher/go-exiftool/milestone/6)
   - [fix line separator on macOS](https://github.com/barasher/go-exiftool/issues/16)
+- [v1.3.2](https://github.com/barasher/go-exiftool/milestone/7)
+  - [add Freebsd support](https://github.com/barasher/go-exiftool/pull/21) (thank to @ghyman1)
