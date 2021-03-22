@@ -185,3 +185,11 @@ func Charset(charset string) func(*Exiftool) error {
 		return nil
 	}
 }
+
+//Text
+func AddInitArgs(args []string) func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.extraInitArgs = append(e.extraInitArgs, args...)
+		return nil
+	}
+}
