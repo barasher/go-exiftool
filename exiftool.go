@@ -186,7 +186,10 @@ func Charset(charset string) func(*Exiftool) error {
 	}
 }
 
-//Text
+// Function to parse additional initial arguments to exiftool.
+// Sample :
+//   extraInitArgs := []string{"-n"}
+//   e, err := NewExiftool(AddInitArgs(extraInitArgs))
 func AddInitArgs(args []string) func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, args...)
