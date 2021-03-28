@@ -186,13 +186,12 @@ func Charset(charset string) func(*Exiftool) error {
 	}
 }
 
-// Function to parse additional initial arguments to exiftool.
+// Function to use 'No print conversion' mode, see https://exiftool.org/exiftool_pod.html.
 // Sample :
-//   extraInitArgs := []string{"-n"}
-//   e, err := NewExiftool(AddInitArgs(extraInitArgs))
-func AddInitArgs(args []string) func(*Exiftool) error {
+//   e, err := NewExiftool(NoPrintConversion())
+func NoPrintConversion() func(*Exiftool) error {
 	return func(e *Exiftool) error {
-		e.extraInitArgs = append(e.extraInitArgs, args...)
+		e.extraInitArgs = append(e.extraInitArgs, "-n")
 		return nil
 	}
 }
