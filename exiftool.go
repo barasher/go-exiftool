@@ -186,7 +186,7 @@ func Charset(charset string) func(*Exiftool) error {
 	}
 }
 
-// Function to use 'No print conversion' mode, see https://exiftool.org/exiftool_pod.html.
+// NoPrintConversion enables 'No print conversion' mode, see https://exiftool.org/exiftool_pod.html.
 // Sample :
 //   e, err := NewExiftool(NoPrintConversion())
 func NoPrintConversion() func(*Exiftool) error {
