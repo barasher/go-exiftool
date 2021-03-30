@@ -234,3 +234,22 @@ func TestNewExifTool_WithCharset(t *testing.T) {
 	assert.Equal(t, 1, len(metas))
 	assert.Nil(t, metas[0].Err)
 }
+
+func TestNoPrintConversion(t *testing.T) {
+	e, err := NewExiftool(NoPrintConversion())
+	assert.Nil(t, err)
+	defer e.Close()
+
+	metas := e.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+
+	for _, meta := range metas {
+		if meta.Err != nil {
+			continue
+		}
+		expProgram, err := meta.GetInt("ExposureProgram")
+		assert.Nil(t, err)
+		assert.Equal(t, int64(2), expProgram)
+	}
+}
