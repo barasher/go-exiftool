@@ -76,3 +76,5 @@ Output :
   - [fix line separator on macOS](https://github.com/barasher/go-exiftool/issues/16)
 - [v1.3.2](https://github.com/barasher/go-exiftool/milestone/7)
   - [add Freebsd support](https://github.com/barasher/go-exiftool/pull/21) (thank to @ghyman1)
+- [v1.4.0](https://github.com/barasher/go-exiftool/milestone/8)
+  - ["NoPrintConversion" functional option](https://github.com/barasher/go-exiftool/pull/24) (thank to [Kjeldgaard](https://github.com/Kjeldgaard))
