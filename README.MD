@@ -78,3 +78,5 @@ Output :
   - [add Freebsd support](https://github.com/barasher/go-exiftool/pull/21) (thank to @ghyman1)
 - [v1.4.0](https://github.com/barasher/go-exiftool/milestone/8)
   - ["NoPrintConversion" functional option](https://github.com/barasher/go-exiftool/pull/24) (thank to [Kjeldgaard](https://github.com/Kjeldgaard))
+- [v1.5.0](https://github.com/barasher/go-exiftool/milestone/9)
+  - "ExtractEmbedded" functional option
