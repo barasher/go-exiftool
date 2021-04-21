@@ -195,3 +195,13 @@ func NoPrintConversion() func(*Exiftool) error {
 		return nil
 	}
 }
+
+// ExtractEmbedded extracts embedded metadata from files (activates Exiftool's '-ee' paramater)
+// Sample :
+//   e, err := NewExiftool(ExtractEmbedded())
+func ExtractEmbedded() func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.extraInitArgs = append(e.extraInitArgs, "-ee")
+		return nil
+	}
+}

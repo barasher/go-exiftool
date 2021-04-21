@@ -253,3 +253,25 @@ func TestNoPrintConversion(t *testing.T) {
 		assert.Equal(t, int64(2), expProgram)
 	}
 }
+
+func TestExtractEmbedded(t *testing.T) {
+	eWithout, err := NewExiftool()
+	assert.Nil(t, err)
+	defer eWithout.Close()
+	metas := eWithout.ExtractMetadata("./testdata/extractEmbedded.mp4")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	_, err = metas[0].GetString("OtherSerialNumber")
+	assert.Equal(t, ErrKeyNotFound, err)
+
+	eWith, err := NewExiftool(ExtractEmbedded())
+	assert.Nil(t, err)
+	defer eWith.Close()
+	metas = eWith.ExtractMetadata("./testdata/extractEmbedded.mp4")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	osn, err := metas[0].GetString("OtherSerialNumber")
+	assert.Nil(t, err)
+	assert.Equal(t, "HERO4 Silver", osn)
+
+}
