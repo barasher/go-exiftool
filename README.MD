@@ -1,7 +1,7 @@
 # go-exiftool
 
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
-[![Build Status](https://travis-ci.org/barasher/go-exiftool.svg?branch=master)](https://travis-ci.org/barasher/go-exiftool)
+[![Build Status](https://github.com/barasher/picdexer/workflows/go-exiftool-ci/badge.svg)](https://github.com/barasher/go-exiftool/actions)
 [![go report card](https://goreportcard.com/badge/github.com/barasher/go-exiftool "go report card")](https://goreportcard.com/report/github.com/barasher/go-exiftool)
 [![GoDoc](https://godoc.org/github.com/barasher/go-exiftool?status.svg)](https://godoc.org/github.com/barasher/go-exiftool)
 [![codecov](https://codecov.io/gh/barasher/go-exiftool/branch/master/graph/badge.svg)](https://codecov.io/gh/barasher/go-exiftool)

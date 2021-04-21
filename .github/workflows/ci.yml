@@ -1,0 +1,22 @@
+name: go-exiftool-ci
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.13.0'
+      - name: Environment dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -q -y install libimage-exiftool-perl
+          exiftool -ver
+          go get -v
+      - name: Tests
+        run: go test -coverprofile=coverage.txt -covermode=atomic ./...
+      - name: Coverage publication
+        run: bash <(curl -s https://codecov.io/bash)
