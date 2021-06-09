@@ -205,3 +205,13 @@ func ExtractEmbedded() func(*Exiftool) error {
 		return nil
 	}
 }
+
+// ExtractAllBinaryMetadata extracts all binary metadata (activates Exiftool's '-b' paramater)
+// Sample :
+//   e, err := NewExiftool(ExtractAllBinaryMetadata())
+func ExtractAllBinaryMetadata() func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.extraInitArgs = append(e.extraInitArgs, "-b")
+		return nil
+	}
+}

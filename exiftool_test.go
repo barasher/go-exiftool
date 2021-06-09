@@ -273,5 +273,26 @@ func TestExtractEmbedded(t *testing.T) {
 	osn, err := metas[0].GetString("OtherSerialNumber")
 	assert.Nil(t, err)
 	assert.Equal(t, "HERO4 Silver", osn)
+}
 
+func TestExtractAllBinaryMetadata(t *testing.T) {
+	eWithout, err := NewExiftool()
+	assert.Nil(t, err)
+	defer eWithout.Close()
+	metas := eWithout.ExtractMetadata("./testdata/binary.mp3")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	osn, err := metas[0].GetString("Picture")
+	assert.Nil(t, err)
+	assert.False(t, strings.HasPrefix(osn, "base64")) // backward compatibility
+
+	eWith, err := NewExiftool(ExtractAllBinaryMetadata())
+	assert.Nil(t, err)
+	defer eWith.Close()
+	metas = eWith.ExtractMetadata("./testdata/binary.mp3")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	osn, err = metas[0].GetString("Picture")
+	assert.Nil(t, err)
+	assert.True(t, strings.HasPrefix(osn, "base64"))
 }
