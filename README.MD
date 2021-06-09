@@ -80,3 +80,5 @@ Output :
   - ["NoPrintConversion" functional option](https://github.com/barasher/go-exiftool/pull/24) (thank to [Kjeldgaard](https://github.com/Kjeldgaard))
 - [v1.5.0](https://github.com/barasher/go-exiftool/milestone/9)
   - "ExtractEmbedded" functional option
+- [v1.6.0](https://github.com/barasher/go-exiftool/milestone/10)
+  - "ExtractAllBinaryMetadata" functional option
