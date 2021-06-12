@@ -3,6 +3,7 @@ package exiftool
 import (
 	"bufio"
 	"fmt"
+	"os/exec"
 	"strings"
 	"testing"
 
