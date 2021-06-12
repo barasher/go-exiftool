@@ -24,6 +24,16 @@ type FileMetadata struct {
 	Err    error
 }
 
+// BinaryData is a structure that represents an exiftool's binary extraction. File contains the
+// filename that had to be extracted. If anything went wrong, Err will not be nil. Binary
+// stores extracted data in []byte.
+type BinaryData struct {
+	File   string
+	Binary []byte
+	Err    error
+}
+
+
 // GetString returns a field value as string and an error if one occurred.
 // KeyNotFoundError will be returned if the key can't be found
 func (fm FileMetadata) GetString(k string) (string, error) {
