@@ -150,6 +150,46 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 	return fms
 }
 
+// ExtractBinary extracts Binary from files
+func (e *Exiftool) ExtractBinary(files ...string) []BinaryData {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	fms := make([]BinaryData, len(files))
+
+	for i, f := range files {
+		fms[i].File = f
+
+		if _, err := os.Stat(f); err != nil {
+			if os.IsNotExist(err) {
+				fms[i].Err = ErrNotExist
+				continue
+			}
+
+			fms[i].Err = err
+
+			continue
+		}
+
+		fmt.Fprintln(e.stdin, f)
+		fmt.Fprintln(e.stdin, executeArg)
+
+		if !e.scanMergedOut.Scan() {
+			fms[i].Err = fmt.Errorf("nothing on stdMergedOut")
+			continue
+		}
+
+		if e.scanMergedOut.Err() != nil {
+			fms[i].Err = fmt.Errorf("error while reading stdMergedOut: %w", e.scanMergedOut.Err())
+			continue
+		}
+
+		fms[i].Binary = e.scanMergedOut.Bytes()
+	}
+
+	return fms
+}
+
 func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
 	idx := bytes.Index(data, readyToken)
 	if idx == -1 {
@@ -212,6 +252,16 @@ func ExtractEmbedded() func(*Exiftool) error {
 func ExtractAllBinaryMetadata() func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-b")
+		return nil
+	}
+}
+
+// ExtractBinaryPicture extracts picture binary metadata (activates Exiftool's '-b' and '-picture'  paramater)
+// Sample :
+//   e, err := NewExiftool(ExtractBinaryPicture())
+func ExtractBinaryPicture() func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.extraInitArgs = append(e.extraInitArgs, "-b",  "-picture")
 		return nil
 	}
 }
