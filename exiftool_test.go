@@ -296,10 +296,18 @@ func TestExtractAllBinaryMetadata(t *testing.T) {
 	assert.True(t, strings.HasPrefix(osn, "base64"))
 }
 
-// mvp
-func TestExtractBinaryPicture(t *testing.T) {
-	cmd := exec.Command("exiftool","-b","-Picture","testdata/binary2.mp3")
-	v,_:=cmd.CombinedOutput()
-	log.Println(v)
-}
 
+func TestExiftoolBinary(t *testing.T) {
+	testFile := "./testdata/binary.mp3"
+
+	cmd := exec.Command("exiftool", "-b", "-Picture", testFile)
+	v, _ := cmd.CombinedOutput()
+
+	eWith, err := NewExiftool(ExtractBinaryPicture())
+	assert.Nil(t, err)
+	defer eWith.Close()
+	bytes := eWith.ExtractBinary(testFile)
+	assert.Equal(t, 1, len(bytes))
+	assert.Nil(t, bytes[0].Err)
+	assert.Equal(t, len(v), len(bytes[0].Binary))
+}
