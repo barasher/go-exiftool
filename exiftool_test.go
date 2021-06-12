@@ -298,7 +298,7 @@ func TestExtractAllBinaryMetadata(t *testing.T) {
 
 // mvp
 func TestExtractBinaryPicture(t *testing.T) {
-	cmd := exec.Command("exiftool.exe","-b","-Picture","testdata/binary2.mp3")
+	cmd := exec.Command("exiftool","-b","-Picture","testdata/binary2.mp3")
 	v,_:=cmd.CombinedOutput()
 	log.Println(v)
 }
