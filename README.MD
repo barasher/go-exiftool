@@ -18,6 +18,8 @@
 
 - On Debian : `sudo apt-get install exiftool`
 
+By default, `go-exiftool` binary will look for `exiftool` binary in $PATH, but another location can be specified (see `SetExiftoolBinaryPath` functional option).
+
 ## Usage
 
 ```go
@@ -82,3 +84,5 @@ Output :
   - "ExtractEmbedded" functional option
 - [v1.6.0](https://github.com/barasher/go-exiftool/milestone/10)
   - "ExtractAllBinaryMetadata" functional option
+- [v1.6.1](https://github.com/barasher/go-exiftool/milestone/11)
+  - "SetExiftoolBinaryPath" functional option : specify where to find exiftool binary (default : $path)
