@@ -24,22 +24,22 @@ var ErrNotExist = errors.New("file does not exist")
 
 // Exiftool is the exiftool utility wrapper
 type Exiftool struct {
-	lock          sync.Mutex
-	stdin         io.WriteCloser
-	stdMergedOut  io.ReadCloser
-	scanMergedOut *bufio.Scanner
-	bufferSet     bool
-	buffer        []byte
-	bufferMaxSize int
-	extraInitArgs []string
-	exiftooltBin  string
+	lock            sync.Mutex
+	stdin           io.WriteCloser
+	stdMergedOut    io.ReadCloser
+	scanMergedOut   *bufio.Scanner
+	bufferSet       bool
+	buffer          []byte
+	bufferMaxSize   int
+	extraInitArgs   []string
+	exiftoolBinPath string
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
 // wrong, a non empty error will be returned.
 func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	e := Exiftool{
-		exiftooltBin: binary,
+		exiftoolBinPath: binary,
 	}
 
 	for _, opt := range opts {
@@ -49,7 +49,7 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	}
 
 	args := append(initArgs, e.extraInitArgs...)
-	cmd := exec.Command(e.exiftooltBin, args...)
+	cmd := exec.Command(e.exiftoolBinPath, args...)
 	r, w := io.Pipe()
 	e.stdMergedOut = r
 
@@ -214,6 +214,19 @@ func ExtractEmbedded() func(*Exiftool) error {
 func ExtractAllBinaryMetadata() func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-b")
+		return nil
+	}
+}
+
+// SetExiftoolBinaryPath sets exiftool's binary path. When not specified, the binary will have to be in $PATH
+// Sample :
+//   e, err := NewExiftool(SetExiftoolBinaryPath("/usr/bin/exiftool"))
+func SetExiftoolBinaryPath(p string) func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		if _, err := os.Stat(p); err != nil {
+			return fmt.Errorf("error while checking if path '%v' exists: %w", p, err)
+		}
+		e.exiftoolBinPath = p
 		return nil
 	}
 }

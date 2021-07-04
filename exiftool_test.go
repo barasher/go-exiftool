@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"os/exec"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -295,4 +296,30 @@ func TestExtractAllBinaryMetadata(t *testing.T) {
 	osn, err = metas[0].GetString("Picture")
 	assert.Nil(t, err)
 	assert.True(t, strings.HasPrefix(osn, "base64"))
+}
+
+func TestSetExiftoolBinaryPath(t *testing.T) {
+	// default
+	eDefault, err := NewExiftool()
+	assert.Nil(t, err)
+	defer eDefault.Close()
+	f := eDefault.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(f))
+	assert.Nil(t, f[0].Err)
+
+	// set path
+	exiftoolPath, err := exec.LookPath(binary)
+	assert.Nil(t, err)
+	t.Logf("exiftool path: %v", exiftoolPath)
+	eSet, err := NewExiftool(SetExiftoolBinaryPath(exiftoolPath))
+	assert.Nil(t, err)
+	defer eSet.Close()
+	f = eSet.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(f))
+	assert.Nil(t, f[0].Err)
+
+	// error on init
+	_, err = NewExiftool(SetExiftoolBinaryPath("/non/existing/path"))
+	assert.NotNil(t, err)
+
 }
