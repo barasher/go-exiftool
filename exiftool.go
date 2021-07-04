@@ -13,7 +13,6 @@ import (
 	"errors"
 )
 
-var binary = "exiftool"
 var executeArg = "-execute"
 var initArgs = []string{"-stay_open", "True", "-@", "-", "-common_args"}
 var extractArgs = []string{"-j"}
@@ -33,12 +32,15 @@ type Exiftool struct {
 	buffer        []byte
 	bufferMaxSize int
 	extraInitArgs []string
+	exiftooltBin  string
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
 // wrong, a non empty error will be returned.
 func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
-	e := Exiftool{}
+	e := Exiftool{
+		exiftooltBin: binary,
+	}
 
 	for _, opt := range opts {
 		if err := opt(&e); err != nil {
@@ -47,7 +49,7 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	}
 
 	args := append(initArgs, e.extraInitArgs...)
-	cmd := exec.Command(binary, args...)
+	cmd := exec.Command(e.exiftooltBin, args...)
 	r, w := io.Pipe()
 	e.stdMergedOut = r
 
