@@ -308,7 +308,7 @@ func TestSetExiftoolBinaryPath(t *testing.T) {
 	assert.Nil(t, f[0].Err)
 
 	// set path
-	exiftoolPath, err := exec.LookPath(binary)
+	exiftoolPath, err := exec.LookPath(exiftoolBinary)
 	assert.Nil(t, err)
 	t.Logf("exiftool path: %v", exiftoolPath)
 	eSet, err := NewExiftool(SetExiftoolBinaryPath(exiftoolPath))

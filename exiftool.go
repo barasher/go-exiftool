@@ -39,7 +39,7 @@ type Exiftool struct {
 // wrong, a non empty error will be returned.
 func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	e := Exiftool{
-		exiftoolBinPath: binary,
+		exiftoolBinPath: exiftoolBinary,
 	}
 
 	for _, opt := range opts {
