@@ -14,7 +14,7 @@ import (
 )
 
 var executeArg = "-execute"
-var initArgs = []string{"-stay_open", "True", "-@", "-", "-common_args"}
+var initArgs = []string{"-stay_open", "True", "-@", "-"}
 var extractArgs = []string{"-j"}
 var closeArgs = []string{"-stay_open", "False", executeArg}
 var readyTokenLen = len(readyToken)
@@ -48,7 +48,12 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 		}
 	}
 
-	args := append(initArgs, e.extraInitArgs...)
+	args := append([]string(nil), initArgs...)
+	if len(e.extraInitArgs) > 0 {
+		args = append(args, "-common_args")
+		args = append(args, e.extraInitArgs...)
+	}
+
 	cmd := exec.Command(e.exiftoolBinPath, args...)
 	r, w := io.Pipe()
 	e.stdMergedOut = r
