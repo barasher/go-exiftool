@@ -73,7 +73,7 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	e.scanMergedOut.Split(splitReadyToken)
 
 	if err = cmd.Start(); err != nil {
-		return nil, fmt.Errorf("error when executing commande: %w", err)
+		return nil, fmt.Errorf("error when executing command: %w", err)
 	}
 
 	return &e, nil
