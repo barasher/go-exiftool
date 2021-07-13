@@ -168,6 +168,14 @@ func TestCloseErrorOnStdout(t *testing.T) {
 	assert.True(t, wClosed)
 }
 
+func TestCloseExifToolNominal(t *testing.T) {
+	e, err := NewExiftool()
+
+	assert.Nil(t, err)
+	assert.Nil(t, e.Close())
+}
+
+
 type readWriteCloserMock struct {
 	writeInt int
 	writeErr error
