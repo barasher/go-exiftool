@@ -4,17 +4,19 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
-
-	"errors"
 )
 
+const writeMetadataSuccessTokenLen = len(writeMetadataSuccessToken)
+
 var executeArg = "-execute"
-var initArgs = []string{"-stay_open", "True", "-@", "-", "-common_args"}
+var initArgs = []string{"-stay_open", "True", "-@", "-"}
 var extractArgs = []string{"-j"}
 var closeArgs = []string{"-stay_open", "False", executeArg}
 var readyTokenLen = len(readyToken)
@@ -33,6 +35,7 @@ type Exiftool struct {
 	bufferMaxSize   int
 	extraInitArgs   []string
 	exiftoolBinPath string
+	cmd             *exec.Cmd
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
@@ -48,16 +51,21 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 		}
 	}
 
-	args := append(initArgs, e.extraInitArgs...)
-	cmd := exec.Command(e.exiftoolBinPath, args...)
+	args := append([]string(nil), initArgs...)
+	if len(e.extraInitArgs) > 0 {
+		args = append(args, "-common_args")
+		args = append(args, e.extraInitArgs...)
+	}
+
+	e.cmd = exec.Command(e.exiftoolBinPath, args...)
 	r, w := io.Pipe()
 	e.stdMergedOut = r
 
-	cmd.Stdout = w
-	cmd.Stderr = w
+	e.cmd.Stdout = w
+	e.cmd.Stderr = w
 
 	var err error
-	if e.stdin, err = cmd.StdinPipe(); err != nil {
+	if e.stdin, err = e.cmd.StdinPipe(); err != nil {
 		return nil, fmt.Errorf("error when piping stdin: %w", err)
 	}
 
@@ -67,8 +75,8 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	}
 	e.scanMergedOut.Split(splitReadyToken)
 
-	if err = cmd.Start(); err != nil {
-		return nil, fmt.Errorf("error when executing commande: %w", err)
+	if err = e.cmd.Start(); err != nil {
+		return nil, fmt.Errorf("error when executing command: %w", err)
 	}
 
 	return &e, nil
@@ -93,6 +101,12 @@ func (e *Exiftool) Close() error {
 
 	if err := e.stdin.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("error while closing stdin: %w", err))
+	}
+
+	if e.cmd != nil {
+		if err := e.cmd.Wait(); err != nil {
+			errs = append(errs, fmt.Errorf("error while waiting for exiftool to exit: %w", err))
+		}
 	}
 
 	if len(errs) > 0 {
@@ -152,6 +166,50 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 	return fms
 }
 
+// WriteMetadata writes the given metadata for each file.
+// Any errors will be saved to FileMetadata.Err
+// Note: If you're reusing an existing FileMetadata instance,
+//       you should nil the Err before passing it to WriteMetadata
+func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	for i, md := range fileMetadata {
+		if _, err := os.Stat(md.File); err != nil {
+			if os.IsNotExist(err) {
+				fileMetadata[i].Err = ErrNotExist
+				continue
+			}
+
+			fileMetadata[i].Err = err
+
+			continue
+		}
+
+		for k := range md.Fields {
+			v, err := md.GetString(k)
+			if err != nil {
+				fileMetadata[i].Err = err
+				continue
+			}
+			fmt.Fprintln(e.stdin, "-"+k+"="+v)
+		}
+
+		fmt.Fprintln(e.stdin, md.File)
+		fmt.Fprintln(e.stdin, executeArg)
+
+		if !e.scanMergedOut.Scan() {
+			fileMetadata[i].Err = fmt.Errorf("nothing on stdMergedOut")
+			continue
+		}
+
+		if err := handleWriteMetadataResponse(e.scanMergedOut.Text()); err != nil {
+			fileMetadata[i].Err = fmt.Errorf("Error writing metadata: %w", err)
+			continue
+		}
+	}
+}
+
 func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
 	idx := bytes.Index(data, readyToken)
 	if idx == -1 {
@@ -163,6 +221,18 @@ func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
 	}
 
 	return idx + readyTokenLen, data[:idx], nil
+}
+
+func handleWriteMetadataResponse(resp string) error {
+	if len(resp) == 0 {
+		return nil
+	}
+	if len(resp) >= writeMetadataSuccessTokenLen {
+		if resp[len(resp) - writeMetadataSuccessTokenLen:] == writeMetadataSuccessToken {
+			return nil
+		}
+	}
+	return errors.New(strings.TrimSpace(resp))
 }
 
 // Buffer defines the buffer used to read from stdout and stderr, see https://golang.org/pkg/bufio/#Scanner.Buffer
@@ -214,6 +284,17 @@ func ExtractEmbedded() func(*Exiftool) error {
 func ExtractAllBinaryMetadata() func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-b")
+		return nil
+	}
+}
+
+// OverwriteOriginal overwrites the original file when writing the file metadata
+// instead of keeping a copy of the original (activates Exiftool's '-overwrite_original' parameter)
+// Sample :
+//   e, err := NewExiftool(OverwriteOriginal())
+func OverwriteOriginal() func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.extraInitArgs = append(e.extraInitArgs, "-overwrite_original")
 		return nil
 	}
 }
