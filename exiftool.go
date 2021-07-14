@@ -9,9 +9,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 )
+
+const writeMetadataSuccessTokenLen = len(writeMetadataSuccessToken)
 
 var executeArg = "-execute"
 var initArgs = []string{"-stay_open", "True", "-@", "-"}
@@ -179,6 +182,50 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 	return fms
 }
 
+// WriteMetadata writes the given metadata for each file.
+// Any errors will be saved to FileMetadata.Err
+// Note: If you're reusing an existing FileMetadata instance,
+//       you should nil the Err before passing it to WriteMetadata
+func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	for i, md := range fileMetadata {
+		if _, err := os.Stat(md.File); err != nil {
+			if os.IsNotExist(err) {
+				fileMetadata[i].Err = ErrNotExist
+				continue
+			}
+
+			fileMetadata[i].Err = err
+
+			continue
+		}
+
+		for k := range md.Fields {
+			v, err := md.GetString(k)
+			if err != nil {
+				fileMetadata[i].Err = err
+				continue
+			}
+			fmt.Fprintln(e.stdin, "-"+k+"="+v)
+		}
+
+		fmt.Fprintln(e.stdin, md.File)
+		fmt.Fprintln(e.stdin, executeArg)
+
+		if !e.scanMergedOut.Scan() {
+			fileMetadata[i].Err = fmt.Errorf("nothing on stdMergedOut")
+			continue
+		}
+
+		if err := handleWriteMetadataResponse(e.scanMergedOut.Text()); err != nil {
+			fileMetadata[i].Err = fmt.Errorf("Error writing metadata: %w", err)
+			continue
+		}
+	}
+}
+
 func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
 	idx := bytes.Index(data, readyToken)
 	if idx == -1 {
@@ -190,6 +237,18 @@ func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
 	}
 
 	return idx + readyTokenLen, data[:idx], nil
+}
+
+func handleWriteMetadataResponse(resp string) error {
+	if len(resp) == 0 {
+		return nil
+	}
+	if len(resp) >= writeMetadataSuccessTokenLen {
+		if resp[len(resp) - writeMetadataSuccessTokenLen:] == writeMetadataSuccessToken {
+			return nil
+		}
+	}
+	return errors.New(strings.TrimSpace(resp))
 }
 
 // Buffer defines the buffer used to read from stdout and stderr, see https://golang.org/pkg/bufio/#Scanner.Buffer

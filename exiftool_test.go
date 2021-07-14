@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"os"
 	"os/exec"
+	"path/filepath"
 
+	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewExiftoolEmpty(t *testing.T) {
@@ -357,5 +361,116 @@ func TestSetExiftoolBinaryPath(t *testing.T) {
 	// error on init
 	_, err = NewExiftool(SetExiftoolBinaryPath("/non/existing/path"))
 	assert.NotNil(t, err)
+}
 
+func TestWriteMetadataSuccessTokenHandling(t *testing.T) {
+	testCases := []struct{
+		name string
+		testResp string
+		expectErr bool
+	}{
+		{name: "token as full resp", testResp: writeMetadataSuccessToken, expectErr: false},
+		{name: "token at resp end", testResp: "prefix text" + writeMetadataSuccessToken,
+			expectErr: false},
+		{name: "token at resp middle",
+			testResp: "prefix text" + writeMetadataSuccessToken + "suffix text",
+			expectErr: true},
+		{name: "token at resp beginning", testResp: writeMetadataSuccessToken + "suffix text",
+			expectErr: true},
+		{name: "no token", testResp: "some error message", expectErr: true},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T){
+			err := handleWriteMetadataResponse(tc.testResp)
+			if tc.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.Nil(t, err)
+			}
+		})
+	}
+}
+
+func TestWriteMetadata(t *testing.T) {
+	t.Parallel()
+
+	fields := map[string]interface{} {
+		"title": "fake title",
+		"description": "fake description",
+	}
+
+	runWriteTest(t, func(t *testing.T, tmpDir string) {
+		e, err := NewExiftool()
+		require.Nil(t, err)
+
+		testCases := []struct{
+			md FileMetadata
+			expectErr bool
+		}{
+			{md: FileMetadata{File: filepath.Join(tmpDir, "20190404_131804.jpg"), Fields: fields},
+				expectErr: false},
+			{md: FileMetadata{File: filepath.Join(tmpDir, "binary.mp3"), Fields: fields},
+				expectErr: true},
+			{md: FileMetadata{File: filepath.Join(tmpDir, "empty.jpg"), Fields: fields},
+				expectErr: true},
+			{md: FileMetadata{File: filepath.Join(tmpDir, "extractEmbedded.mp4"), Fields: fields},
+				expectErr: false},
+		}
+
+		mds := make([]FileMetadata, 0, len(testCases))
+		for _, tc := range testCases {
+			mds = append(mds, tc.md)
+		}
+
+		e.WriteMetadata(mds)
+		for i, md := range mds {
+			if testCases[i].expectErr {
+				assert.Error(t, md.Err, "file: " + md.File)
+			} else {
+				assert.Nil(t, md.Err, "file: " + md.File)
+			}
+		}
+	})
+}
+
+func TestWriteMetadataInvalidField(t *testing.T) {
+	t.Parallel()
+
+	fields := map[string]interface{} {
+		"not a valid field": "invalid field value",
+	}
+
+	runWriteTest(t, func(t *testing.T, tmpDir string) {
+		e, err := NewExiftool()
+		require.Nil(t, err)
+
+		mds := []FileMetadata{
+			{File: filepath.Join(tmpDir, "20190404_131804.jpg"), Fields: fields},
+			{File: filepath.Join(tmpDir, "binary.mp3"), Fields: fields},
+			{File: filepath.Join(tmpDir, "empty.jpg"), Fields: fields},
+			{File: filepath.Join(tmpDir, "extractEmbedded.mp4"), Fields: fields},
+		}
+
+		e.WriteMetadata(mds)
+		for _, md := range mds {
+			assert.Error(t, md.Err, "file: " + md.File)
+		}
+	})
+}
+
+func runWriteTest(t *testing.T, f func(t *testing.T, tmpDir string)) {
+	tmpDir, err := os.MkdirTemp("", "testdata*")
+	require.Nil(t, err, "Unable to create temporary directory")
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		assert.Nil(t, err, "Unable to remove temporary directory: " + tmpDir)
+	}()
+
+	err = copy.Copy("testdata", tmpDir, copy.Options{Sync: true});
+	require.Nil(t, err, "Unable to copy testdata to temporary directory: " + tmpDir)
+
+	f(t, tmpDir)
 }
