@@ -461,6 +461,47 @@ func TestWriteMetadataInvalidField(t *testing.T) {
 	})
 }
 
+func TestWriteMetadataOverwriteOriginal(t *testing.T) {
+	fields := map[string]interface{} {
+		"title": "fake title",
+		"description": "fake description",
+	}
+
+	testCases := []struct{
+		name string
+		args []func(*Exiftool) error
+		expectedNumMatches int
+	}{
+		{name: "keep original", args: nil, expectedNumMatches: 1},
+		{name: "overwrite original", args: []func(*Exiftool) error{OverwriteOriginal()}, expectedNumMatches: 0},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			runWriteTest(t, func(t *testing.T, tmpDir string) {
+				e, err := NewExiftool(tc.args...)
+				require.Nil(t, err)
+
+				mds := []FileMetadata{{File: filepath.Join(tmpDir, "20190404_131804.jpg"), Fields: fields}}
+				e.WriteMetadata(mds)
+				for _, md := range mds {
+					assert.Nil(t, md.Err, "file: " + md.File)
+				}
+
+				matches, err := filepath.Glob(filepath.Join(tmpDir, "*_original"))
+				assert.Nil(t, err)
+
+				t.Log("matches:", matches)
+				assert.Equal(t, tc.expectedNumMatches, len(matches))
+			})
+		})
+	}
+}
+
 func runWriteTest(t *testing.T, f func(t *testing.T, tmpDir string)) {
 	tmpDir, err := os.MkdirTemp("", "testdata*")
 	require.Nil(t, err, "Unable to create temporary directory")

@@ -304,6 +304,17 @@ func ExtractAllBinaryMetadata() func(*Exiftool) error {
 	}
 }
 
+// OverwriteOriginal overwrites the original file when writing the file metadata
+// instead of keeping a copy of the original (activates Exiftool's '-overwrite_original' parameter)
+// Sample :
+//   e, err := NewExiftool(OverwriteOriginal())
+func OverwriteOriginal() func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.extraInitArgs = append(e.extraInitArgs, "-overwrite_original")
+		return nil
+	}
+}
+
 // SetExiftoolBinaryPath sets exiftool's binary path. When not specified, the binary will have to be in $PATH
 // Sample :
 //   e, err := NewExiftool(SetExiftoolBinaryPath("/usr/bin/exiftool"))
