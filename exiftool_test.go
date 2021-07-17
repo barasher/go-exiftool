@@ -3,13 +3,13 @@ package exiftool
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 	"os"
 	"os/exec"
 	"path/filepath"
 
-	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -510,8 +510,64 @@ func runWriteTest(t *testing.T, f func(t *testing.T, tmpDir string)) {
 		assert.Nil(t, err, "Unable to remove temporary directory: " + tmpDir)
 	}()
 
-	err = copy.Copy("testdata", tmpDir, copy.Options{Sync: true});
+	err = copyDir("testdata", tmpDir)
 	require.Nil(t, err, "Unable to copy testdata to temporary directory: " + tmpDir)
 
 	f(t, tmpDir)
+}
+
+func copyDir(src, dest string) error {
+	return filepath.WalkDir(src, func(path string, d os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.Type().IsDir() {
+			if path == src {
+				return nil
+			}
+			return filepath.SkipDir
+		}
+		if !d.Type().IsRegular() {
+			// ignore non-regular files
+			return nil
+		}
+		return copyFile(path, filepath.Join(dest, d.Name()))
+	})
+}
+
+func copyFile(src, dest string) (err error) {
+	var (
+		s *os.File
+		d *os.File
+	)
+
+	s, err = os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		e := s.Close()
+		if err != nil {
+			err = fmt.Errorf("Unable to close src file: %s. Orig error: %w", e.Error(), err)
+		}
+		err = e
+	}()
+
+	d, err = os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		e := d.Close()
+		if err != nil {
+			err = fmt.Errorf("Unable to close dest file: %s. Orig error: %w", e.Error(), err)
+		}
+		err = e
+	}()
+
+	_, err = io.Copy(d, s)
+	if err != nil {
+		return err
+	}
+	return nil
 }
