@@ -240,13 +240,8 @@ func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
 }
 
 func handleWriteMetadataResponse(resp string) error {
-	if len(resp) == 0 {
+	if strings.HasSuffix(resp, writeMetadataSuccessToken) {
 		return nil
-	}
-	if len(resp) >= writeMetadataSuccessTokenLen {
-		if resp[len(resp) - writeMetadataSuccessTokenLen:] == writeMetadataSuccessToken {
-			return nil
-		}
 	}
 	return errors.New(strings.TrimSpace(resp))
 }
