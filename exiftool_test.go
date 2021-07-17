@@ -394,35 +394,45 @@ func TestWriteMetadataSuccessTokenHandling(t *testing.T) {
 	}
 }
 
+var fieldsForWriting = map[string]interface{} {
+	"Title": "fake title",
+	"Description": "fake description",
+	// TODO: Test ints
+	//       Not testing ints since we'd need to update the
+	//       decoder and FileMetadata to use UseNumber()
+	// "CameraImagingModelImageHeight": 5, // test ints
+	"CameraImagingModelPixelAspectRatio": 1.5, // test reals/floats
+}
+
 func TestWriteMetadata(t *testing.T) {
 	t.Parallel()
-
-	fields := map[string]interface{} {
-		"title": "fake title",
-		"description": "fake description",
-	}
 
 	runWriteTest(t, func(t *testing.T, tmpDir string) {
 		e, err := NewExiftool()
 		require.Nil(t, err)
 
-		testCases := []struct{
+		type testCase struct{
 			md FileMetadata
 			expectErr bool
-		}{
-			{md: FileMetadata{File: filepath.Join(tmpDir, "20190404_131804.jpg"), Fields: fields},
-				expectErr: false},
-			{md: FileMetadata{File: filepath.Join(tmpDir, "binary.mp3"), Fields: fields},
+		}
+		testCases := []testCase {
+			{md: FileMetadata{File: filepath.Join(tmpDir, "20190404_131804.jpg"),
+				Fields: fieldsForWriting}, expectErr: false},
+			{md: FileMetadata{File: filepath.Join(tmpDir, "binary.mp3"), Fields: fieldsForWriting},
 				expectErr: true},
-			{md: FileMetadata{File: filepath.Join(tmpDir, "empty.jpg"), Fields: fields},
+			{md: FileMetadata{File: filepath.Join(tmpDir, "empty.jpg"), Fields: fieldsForWriting},
 				expectErr: true},
-			{md: FileMetadata{File: filepath.Join(tmpDir, "extractEmbedded.mp4"), Fields: fields},
-				expectErr: false},
+			{md: FileMetadata{File: filepath.Join(tmpDir, "extractEmbedded.mp4"),
+				Fields: fieldsForWriting}, expectErr: false},
+			{md: FileMetadata{File: filepath.Join(tmpDir, "file_does_not_exist"),
+				Fields: fieldsForWriting}, expectErr: true},
 		}
 
 		mds := make([]FileMetadata, 0, len(testCases))
+		filenames := make([]string, 0, len(testCases))
 		for _, tc := range testCases {
 			mds = append(mds, tc.md)
+			filenames = append(filenames, tc.md.File)
 		}
 
 		e.WriteMetadata(mds)
@@ -431,6 +441,33 @@ func TestWriteMetadata(t *testing.T) {
 				assert.Error(t, md.Err, "file: " + md.File)
 			} else {
 				assert.Nil(t, md.Err, "file: " + md.File)
+			}
+		}
+
+		updatedMDs := e.ExtractMetadata(filenames...)
+		require.Equal(t, len(mds), len(updatedMDs))
+
+
+		for i := 0; i < len(mds); i++ {
+			tc := testCases[i]
+			expected := mds[i]
+			actual := updatedMDs[i]
+
+			if tc.expectErr {
+				if expected.Err != nil {
+					// handles the case where exiftool supports reading from a file type
+					// but not writing
+					return
+				}
+				assert.Error(t, actual.Err)
+				return
+			}
+
+			assert.Nil(t, actual.Err)
+			assert.Equal(t, tc.md.File, actual.File)
+
+			for k := range expected.Fields {
+				assert.Equal(t, expected.Fields[k], actual.Fields[k], "Field %s differs", k)
 			}
 		}
 	})
@@ -462,11 +499,6 @@ func TestWriteMetadataInvalidField(t *testing.T) {
 }
 
 func TestWriteMetadataOverwriteOriginal(t *testing.T) {
-	fields := map[string]interface{} {
-		"title": "fake title",
-		"description": "fake description",
-	}
-
 	testCases := []struct{
 		name string
 		args []func(*Exiftool) error
@@ -486,7 +518,8 @@ func TestWriteMetadataOverwriteOriginal(t *testing.T) {
 				e, err := NewExiftool(tc.args...)
 				require.Nil(t, err)
 
-				mds := []FileMetadata{{File: filepath.Join(tmpDir, "20190404_131804.jpg"), Fields: fields}}
+				mds := []FileMetadata{{File: filepath.Join(tmpDir, "20190404_131804.jpg"),
+					Fields: fieldsForWriting}}
 				e.WriteMetadata(mds)
 				for _, md := range mds {
 					assert.Nil(t, md.Err, "file: " + md.File)
