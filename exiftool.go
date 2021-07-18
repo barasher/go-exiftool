@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"sync"
-
-	"errors"
+	"time"
 )
 
 var executeArg = "-execute"
@@ -18,6 +18,9 @@ var initArgs = []string{"-stay_open", "True", "-@", "-"}
 var extractArgs = []string{"-j"}
 var closeArgs = []string{"-stay_open", "False", executeArg}
 var readyTokenLen = len(readyToken)
+
+// WaitTimeout specifies the duration to wait for exiftool to exit when closing before timing out
+var WaitTimeout = time.Second
 
 // ErrNotExist is a sentinel error for non existing file
 var ErrNotExist = errors.New("file does not exist")
@@ -101,10 +104,22 @@ func (e *Exiftool) Close() error {
 		errs = append(errs, fmt.Errorf("error while closing stdin: %w", err))
 	}
 
-	if e.cmd != nil {
-		if err := e.cmd.Wait(); err != nil {
-			errs = append(errs, fmt.Errorf("error while waiting for exiftool to exit: %w", err))
+	ch := make(chan struct{})
+	go func() {
+		if e.cmd != nil {
+			if err := e.cmd.Wait(); err != nil {
+				errs = append(errs, fmt.Errorf("error while waiting for exiftool to exit: %w", err))
+			}
 		}
+		ch <- struct{}{}
+		close(ch)
+	}()
+
+	// Wait for wait to finish or timeout
+	select {
+	case <- ch:
+	case <- time.After(WaitTimeout):
+		errs = append(errs, errors.New("Timed out waiting for exiftool to exit"))
 	}
 
 	if len(errs) > 0 {
