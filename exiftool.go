@@ -30,16 +30,17 @@ var ErrNotExist = errors.New("file does not exist")
 
 // Exiftool is the exiftool utility wrapper
 type Exiftool struct {
-	lock            sync.Mutex
-	stdin           io.WriteCloser
-	stdMergedOut    io.ReadCloser
-	scanMergedOut   *bufio.Scanner
-	bufferSet       bool
-	buffer          []byte
-	bufferMaxSize   int
-	extraInitArgs   []string
-	exiftoolBinPath string
-	cmd             *exec.Cmd
+	lock                     sync.Mutex
+	stdin                    io.WriteCloser
+	stdMergedOut             io.ReadCloser
+	scanMergedOut            *bufio.Scanner
+	bufferSet                bool
+	buffer                   []byte
+	bufferMaxSize            int
+	extraInitArgs            []string
+	exiftoolBinPath          string
+	cmd                      *exec.Cmd
+	clearFieldsBeforeWriting bool
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
@@ -211,13 +212,28 @@ func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
 			continue
 		}
 
-		for k := range md.Fields {
-			v, err := md.GetString(k)
-			if err != nil {
+		if e.clearFieldsBeforeWriting {
+			if _, err := fmt.Fprintln(e.stdin, "-All="); err != nil {
 				fileMetadata[i].Err = err
 				continue
 			}
-			if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+v); err != nil {
+		}
+
+		for k, v := range md.Fields {
+			newValue := ""
+			switch v.(type) {
+			case nil:
+			default:
+				var err error
+				newValue, err = md.GetString(k)
+				if err != nil {
+					fileMetadata[i].Err = err
+					continue
+				}
+			}
+
+			// TODO: support writing an empty string via '^='
+			if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+newValue); err != nil {
 				fileMetadata[i].Err = err
 				continue
 			}
@@ -324,6 +340,17 @@ func ExtractAllBinaryMetadata() func(*Exiftool) error {
 func OverwriteOriginal() func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-overwrite_original")
+		return nil
+	}
+}
+
+// ClearFieldsBeforeWriting will clear existing fields (e.g. tags) in the file before writing any
+// new tags
+// Sample :
+//   e, err := NewExiftool(ClearFieldsBeforeWriting())
+func ClearFieldsBeforeWriting() func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.clearFieldsBeforeWriting = true
 		return nil
 	}
 }

@@ -498,6 +498,129 @@ func TestWriteMetadataInvalidField(t *testing.T) {
 	})
 }
 
+var	fieldsNotDeleted = map[string]struct{}{
+	"ExifToolVersion": {},
+	"FileName": {},
+	"SourceFile": {},
+	"Directory": {},
+	"FileSize": {},
+	"FileModifyDate": {},
+	"FileAccessDate": {},
+	"FileInodeChangeDate": {},
+	"FilePermissions": {},
+	"FileType": {},
+	"FileTypeExtension": {},
+	"MIMEType": {},
+	"ImageWidth": {},
+	"ImageHeight": {},
+	"EncodingProcess": {},
+	"BitsPerSample": {},
+	"ColorComponents": {},
+	"YCbCrSubSampling": {},
+	"ImageSize": {},
+	"Megapixels": {},
+}
+
+
+func TestWriteMetadataClearExistingFields(t *testing.T) {
+	t.Parallel()
+
+	runWriteTest(t, func(t *testing.T, tmpDir string) {
+		e, err := NewExiftool(ClearFieldsBeforeWriting())
+		require.Nil(t, err)
+
+		filename := filepath.Join(tmpDir, "20190404_131804.jpg")
+		mds := []FileMetadata{{File: filename}}
+
+		fieldsToBeDeleted := []string{}
+		origMDs := e.ExtractMetadata(filename)
+		assert.Equal(t, len(mds), len(origMDs))
+		assert.Nil(t, origMDs[0].Err)
+		for f := range origMDs[0].Fields {
+			if _, ok := fieldsNotDeleted[f]; ok {
+				continue
+			}
+			fieldsToBeDeleted = append(fieldsToBeDeleted, f)
+		}
+		assert.NotEmpty(t, fieldsToBeDeleted)
+
+		e.WriteMetadata(mds)
+		assert.Nil(t, mds[0].Err)
+
+		updatedMDs := e.ExtractMetadata(filename)
+		assert.Equal(t, len(mds), len(updatedMDs))
+		assert.Nil(t, updatedMDs[0].Err)
+		for _, f := range fieldsToBeDeleted {
+			assert.NotContains(t, updatedMDs[0].Fields, f)
+		}
+	})
+}
+
+func TestWriteMetadataClearBeforeWriting(t *testing.T) {
+	t.Parallel()
+
+	runWriteTest(t, func(t *testing.T, tmpDir string) {
+		e, err := NewExiftool(ClearFieldsBeforeWriting())
+		require.Nil(t, err)
+
+		filename := filepath.Join(tmpDir, "20190404_131804.jpg")
+		mds := []FileMetadata{{File: filename, Fields: fieldsForWriting}}
+
+		fieldsToBeDeleted := []string{}
+		origMDs := e.ExtractMetadata(filename)
+		assert.Equal(t, len(mds), len(origMDs))
+		assert.Nil(t, origMDs[0].Err)
+		for f := range origMDs[0].Fields {
+			if _, ok := fieldsNotDeleted[f]; ok {
+				continue
+			}
+			fieldsToBeDeleted = append(fieldsToBeDeleted, f)
+		}
+		assert.NotEmpty(t, fieldsToBeDeleted)
+
+		e.WriteMetadata(mds)
+		assert.Nil(t, mds[0].Err)
+
+		updatedMDs := e.ExtractMetadata(filename)
+		assert.Equal(t, len(mds), len(updatedMDs))
+		assert.Nil(t, updatedMDs[0].Err)
+		for _, f := range fieldsToBeDeleted {
+			assert.NotContains(t, updatedMDs[0].Fields, f)
+		}
+		for f := range fieldsForWriting {
+			assert.Equal(t, fieldsForWriting[f], updatedMDs[0].Fields[f])
+		}
+	})
+}
+
+func TestWriteMetadataDeleteField(t *testing.T) {
+	t.Parallel()
+
+	runWriteTest(t, func(t *testing.T, tmpDir string) {
+		e, err := NewExiftool()
+		require.Nil(t, err)
+
+		fieldToDelete := "Flash"
+		filename := filepath.Join(tmpDir, "20190404_131804.jpg")
+		mds := []FileMetadata{{File: filename, Fields: map[string]interface{}{}}}
+		mds[0].Fields[fieldToDelete] = nil
+
+		origMDs := e.ExtractMetadata(filename)
+		assert.Equal(t, len(mds), len(origMDs))
+		assert.Nil(t, origMDs[0].Err)
+		assert.Equal(t, "No Flash", origMDs[0].Fields[fieldToDelete])
+
+		e.WriteMetadata(mds)
+		assert.Nil(t, mds[0].Err)
+
+		updatedMDs := e.ExtractMetadata(filename)
+		assert.Equal(t, len(mds), len(updatedMDs))
+		assert.Nil(t, updatedMDs[0].Err)
+		_, ok := updatedMDs[0].Fields[fieldToDelete]
+		assert.False(t, ok)
+	})
+}
+
 func TestWriteMetadataOverwriteOriginal(t *testing.T) {
 	testCases := []struct{
 		name string
