@@ -154,11 +154,20 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 		}
 
 		for _, curA := range extractArgs {
-			fmt.Fprintln(e.stdin, curA)
+			if _, err := fmt.Fprintln(e.stdin, curA); err != nil {
+				fms[i].Err = err
+				continue
+			}
 		}
 
-		fmt.Fprintln(e.stdin, f)
-		fmt.Fprintln(e.stdin, executeArg)
+		if _, err := fmt.Fprintln(e.stdin, f); err != nil {
+			fms[i].Err = err
+			continue
+		}
+		if _, err := fmt.Fprintln(e.stdin, executeArg); err != nil {
+			fms[i].Err = err
+			continue
+		}
 
 		if !e.scanMergedOut.Scan() {
 			fms[i].Err = fmt.Errorf("nothing on stdMergedOut")
@@ -208,11 +217,20 @@ func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
 				fileMetadata[i].Err = err
 				continue
 			}
-			fmt.Fprintln(e.stdin, "-"+k+"="+v)
+			if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+v); err != nil {
+				fileMetadata[i].Err = err
+				continue
+			}
 		}
 
-		fmt.Fprintln(e.stdin, md.File)
-		fmt.Fprintln(e.stdin, executeArg)
+		if _, err := fmt.Fprintln(e.stdin, md.File); err != nil {
+			fileMetadata[i].Err = err
+			continue
+		}
+		if _, err := fmt.Fprintln(e.stdin, executeArg); err != nil {
+			fileMetadata[i].Err = err
+			continue
+		}
 
 		if !e.scanMergedOut.Scan() {
 			fileMetadata[i].Err = fmt.Errorf("nothing on stdMergedOut")
