@@ -40,6 +40,7 @@ type Exiftool struct {
 	extraInitArgs            []string
 	exiftoolBinPath          string
 	cmd                      *exec.Cmd
+	backupOriginal           bool
 	clearFieldsBeforeWriting bool
 }
 
@@ -212,6 +213,13 @@ func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
 			continue
 		}
 
+		if !e.backupOriginal {
+			if _, err := fmt.Fprintln(e.stdin, "-overwrite_original"); err != nil {
+				fileMetadata[i].Err = err
+				continue
+			}
+		}
+
 		if e.clearFieldsBeforeWriting {
 			if _, err := fmt.Fprintln(e.stdin, "-All="); err != nil {
 				fileMetadata[i].Err = err
@@ -333,13 +341,13 @@ func ExtractAllBinaryMetadata() func(*Exiftool) error {
 	}
 }
 
-// OverwriteOriginal overwrites the original file when writing the file metadata
-// instead of keeping a copy of the original (activates Exiftool's '-overwrite_original' parameter)
+// BackupOriginal backs up the original file when writing the file metadata
+// instead of overwriting the original (activates Exiftool's '-overwrite_original' parameter)
 // Sample :
-//   e, err := NewExiftool(OverwriteOriginal())
-func OverwriteOriginal() func(*Exiftool) error {
+//   e, err := NewExiftool(BackupOriginal())
+func BackupOriginal() func(*Exiftool) error {
 	return func(e *Exiftool) error {
-		e.extraInitArgs = append(e.extraInitArgs, "-overwrite_original")
+		e.backupOriginal = true
 		return nil
 	}
 }

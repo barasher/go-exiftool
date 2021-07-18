@@ -621,14 +621,14 @@ func TestWriteMetadataDeleteField(t *testing.T) {
 	})
 }
 
-func TestWriteMetadataOverwriteOriginal(t *testing.T) {
+func TestWriteMetadataBackupOriginal(t *testing.T) {
 	testCases := []struct{
 		name string
 		args []func(*Exiftool) error
 		expectedNumMatches int
 	}{
-		{name: "keep original", args: nil, expectedNumMatches: 1},
-		{name: "overwrite original", args: []func(*Exiftool) error{OverwriteOriginal()}, expectedNumMatches: 0},
+		{name: "backup original", args: []func(*Exiftool) error{BackupOriginal()}, expectedNumMatches: 1},
+		{name: "overwrite original", args: nil, expectedNumMatches: 0},
 	}
 
 	for _, tc := range testCases {
