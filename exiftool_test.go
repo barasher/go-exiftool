@@ -11,6 +11,8 @@ import (
 )
 
 func TestNewExiftoolEmpty(t *testing.T) {
+	t.Parallel()
+
 	e, err := NewExiftool()
 	assert.Nil(t, err)
 
@@ -18,6 +20,8 @@ func TestNewExiftoolEmpty(t *testing.T) {
 }
 
 func TestNewExifToolOptOk(t *testing.T) {
+	t.Parallel()
+
 	var exec1, exec2 bool
 
 	f1 := func(*Exiftool) error {
@@ -40,6 +44,8 @@ func TestNewExifToolOptOk(t *testing.T) {
 }
 
 func TestNewExifToolOptKo(t *testing.T) {
+	t.Parallel()
+
 	f := func(*Exiftool) error {
 		return fmt.Errorf("err")
 	}
@@ -61,6 +67,8 @@ func TestSingleExtract(t *testing.T) {
 	for _, tc := range tcs {
 		tc := tc // Pin variable
 		t.Run(tc.tcID, func(t *testing.T) {
+			t.Parallel()
+
 			e, err := NewExiftool()
 			assert.Nilf(t, err, "error not nil: %v", err)
 			defer e.Close()
@@ -75,6 +83,8 @@ func TestSingleExtract(t *testing.T) {
 }
 
 func TestMultiExtract(t *testing.T) {
+	t.Parallel()
+
 	e, err := NewExiftool()
 
 	assert.Nilf(t, err, "error not nil: %v", err)
@@ -168,6 +178,16 @@ func TestCloseErrorOnStdout(t *testing.T) {
 	assert.True(t, wClosed)
 }
 
+func TestCloseExifToolNominal(t *testing.T) {
+	t.Parallel()
+
+	e, err := NewExiftool()
+
+	assert.Nil(t, err)
+	assert.Nil(t, e.Close())
+}
+
+
 type readWriteCloserMock struct {
 	writeInt int
 	writeErr error
@@ -191,6 +211,8 @@ func (e readWriteCloserMock) Close() error {
 }
 
 func TestBuffer(t *testing.T) {
+	t.Parallel()
+
 	e, err := NewExiftool()
 	assert.Nil(t, err)
 	defer e.Close()
@@ -204,6 +226,8 @@ func TestBuffer(t *testing.T) {
 }
 
 func TestNewExifTool_WithBuffer(t *testing.T) {
+	t.Parallel()
+
 	buf := make([]byte, 128*1000)
 	e, err := NewExiftool(Buffer(buf, 64*1000))
 	assert.Nil(t, err)
@@ -215,6 +239,8 @@ func TestNewExifTool_WithBuffer(t *testing.T) {
 }
 
 func TestCharset(t *testing.T) {
+	t.Parallel()
+
 	e, err := NewExiftool()
 	assert.Nil(t, err)
 	defer e.Close()
@@ -227,6 +253,8 @@ func TestCharset(t *testing.T) {
 }
 
 func TestNewExifTool_WithCharset(t *testing.T) {
+	t.Parallel()
+
 	e, err := NewExiftool(Charset("filename=utf8"))
 	assert.Nil(t, err)
 	defer e.Close()
@@ -237,6 +265,8 @@ func TestNewExifTool_WithCharset(t *testing.T) {
 }
 
 func TestNoPrintConversion(t *testing.T) {
+	t.Parallel()
+
 	e, err := NewExiftool(NoPrintConversion())
 	assert.Nil(t, err)
 	defer e.Close()
@@ -256,6 +286,8 @@ func TestNoPrintConversion(t *testing.T) {
 }
 
 func TestExtractEmbedded(t *testing.T) {
+	t.Parallel()
+
 	eWithout, err := NewExiftool()
 	assert.Nil(t, err)
 	defer eWithout.Close()
@@ -277,6 +309,8 @@ func TestExtractEmbedded(t *testing.T) {
 }
 
 func TestExtractAllBinaryMetadata(t *testing.T) {
+	t.Parallel()
+
 	eWithout, err := NewExiftool()
 	assert.Nil(t, err)
 	defer eWithout.Close()
@@ -299,6 +333,8 @@ func TestExtractAllBinaryMetadata(t *testing.T) {
 }
 
 func TestSetExiftoolBinaryPath(t *testing.T) {
+	t.Parallel()
+
 	// default
 	eDefault, err := NewExiftool()
 	assert.Nil(t, err)
