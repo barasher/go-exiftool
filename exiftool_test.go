@@ -667,21 +667,21 @@ func runWriteTest(t *testing.T, f func(t *testing.T, tmpDir string)) {
 }
 
 func copyDir(src, dest string) error {
-	return filepath.WalkDir(src, func(path string, d os.DirEntry, walkErr error) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if d.Type().IsDir() {
+		if info.IsDir() {
 			if path == src {
 				return nil
 			}
 			return filepath.SkipDir
 		}
-		if !d.Type().IsRegular() {
+		if !info.Mode().IsRegular() {
 			// ignore non-regular files
 			return nil
 		}
-		return copyFile(path, filepath.Join(dest, d.Name()))
+		return copyFile(path, filepath.Join(dest, info.Name()))
 	})
 }
 
