@@ -659,14 +659,8 @@ func TestWriteMetadataBackupOriginal(t *testing.T) {
 }
 
 func runWriteTest(t *testing.T, f func(t *testing.T, tmpDir string)) {
-	tmpDir, err := os.MkdirTemp("", "testdata*")
-	require.Nil(t, err, "Unable to create temporary directory")
-	defer func() {
-		err := os.RemoveAll(tmpDir)
-		assert.Nil(t, err, "Unable to remove temporary directory: " + tmpDir)
-	}()
-
-	err = copyDir("testdata", tmpDir)
+	tmpDir := t.TempDir()
+	err := copyDir("testdata", tmpDir)
 	require.Nil(t, err, "Unable to copy testdata to temporary directory: " + tmpDir)
 
 	f(t, tmpDir)
