@@ -9,9 +9,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 )
+
+const writeMetadataSuccessTokenLen = len(writeMetadataSuccessToken)
 
 var executeArg = "-execute"
 var initArgs = []string{"-stay_open", "True", "-@", "-"}
@@ -27,16 +30,18 @@ var ErrNotExist = errors.New("file does not exist")
 
 // Exiftool is the exiftool utility wrapper
 type Exiftool struct {
-	lock            sync.Mutex
-	stdin           io.WriteCloser
-	stdMergedOut    io.ReadCloser
-	scanMergedOut   *bufio.Scanner
-	bufferSet       bool
-	buffer          []byte
-	bufferMaxSize   int
-	extraInitArgs   []string
-	exiftoolBinPath string
-	cmd             *exec.Cmd
+	lock                     sync.Mutex
+	stdin                    io.WriteCloser
+	stdMergedOut             io.ReadCloser
+	scanMergedOut            *bufio.Scanner
+	bufferSet                bool
+	buffer                   []byte
+	bufferMaxSize            int
+	extraInitArgs            []string
+	exiftoolBinPath          string
+	cmd                      *exec.Cmd
+	backupOriginal           bool
+	clearFieldsBeforeWriting bool
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
@@ -151,11 +156,20 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 		}
 
 		for _, curA := range extractArgs {
-			fmt.Fprintln(e.stdin, curA)
+			if _, err := fmt.Fprintln(e.stdin, curA); err != nil {
+				fms[i].Err = err
+				continue
+			}
 		}
 
-		fmt.Fprintln(e.stdin, f)
-		fmt.Fprintln(e.stdin, executeArg)
+		if _, err := fmt.Fprintln(e.stdin, f); err != nil {
+			fms[i].Err = err
+			continue
+		}
+		if _, err := fmt.Fprintln(e.stdin, executeArg); err != nil {
+			fms[i].Err = err
+			continue
+		}
 
 		if !e.scanMergedOut.Scan() {
 			fms[i].Err = fmt.Errorf("nothing on stdMergedOut")
@@ -179,6 +193,81 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 	return fms
 }
 
+// WriteMetadata writes the given metadata for each file.
+// Any errors will be saved to FileMetadata.Err
+// Note: If you're reusing an existing FileMetadata instance,
+//       you should nil the Err before passing it to WriteMetadata
+func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	for i, md := range fileMetadata {
+		if _, err := os.Stat(md.File); err != nil {
+			if os.IsNotExist(err) {
+				fileMetadata[i].Err = ErrNotExist
+				continue
+			}
+
+			fileMetadata[i].Err = err
+
+			continue
+		}
+
+		if !e.backupOriginal {
+			if _, err := fmt.Fprintln(e.stdin, "-overwrite_original"); err != nil {
+				fileMetadata[i].Err = err
+				continue
+			}
+		}
+
+		if e.clearFieldsBeforeWriting {
+			if _, err := fmt.Fprintln(e.stdin, "-All="); err != nil {
+				fileMetadata[i].Err = err
+				continue
+			}
+		}
+
+		for k, v := range md.Fields {
+			newValue := ""
+			switch v.(type) {
+			case nil:
+			default:
+				var err error
+				newValue, err = md.GetString(k)
+				if err != nil {
+					fileMetadata[i].Err = err
+					continue
+				}
+			}
+
+			// TODO: support writing an empty string via '^='
+			if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+newValue); err != nil {
+				fileMetadata[i].Err = err
+				continue
+			}
+		}
+
+		if _, err := fmt.Fprintln(e.stdin, md.File); err != nil {
+			fileMetadata[i].Err = err
+			continue
+		}
+		if _, err := fmt.Fprintln(e.stdin, executeArg); err != nil {
+			fileMetadata[i].Err = err
+			continue
+		}
+
+		if !e.scanMergedOut.Scan() {
+			fileMetadata[i].Err = fmt.Errorf("nothing on stdMergedOut")
+			continue
+		}
+
+		if err := handleWriteMetadataResponse(e.scanMergedOut.Text()); err != nil {
+			fileMetadata[i].Err = fmt.Errorf("Error writing metadata: %w", err)
+			continue
+		}
+	}
+}
+
 func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
 	idx := bytes.Index(data, readyToken)
 	if idx == -1 {
@@ -190,6 +279,13 @@ func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
 	}
 
 	return idx + readyTokenLen, data[:idx], nil
+}
+
+func handleWriteMetadataResponse(resp string) error {
+	if strings.HasSuffix(resp, writeMetadataSuccessToken) {
+		return nil
+	}
+	return errors.New(strings.TrimSpace(resp))
 }
 
 // Buffer defines the buffer used to read from stdout and stderr, see https://golang.org/pkg/bufio/#Scanner.Buffer
@@ -241,6 +337,28 @@ func ExtractEmbedded() func(*Exiftool) error {
 func ExtractAllBinaryMetadata() func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-b")
+		return nil
+	}
+}
+
+// BackupOriginal backs up the original file when writing the file metadata
+// instead of overwriting the original (activates Exiftool's '-overwrite_original' parameter)
+// Sample :
+//   e, err := NewExiftool(BackupOriginal())
+func BackupOriginal() func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.backupOriginal = true
+		return nil
+	}
+}
+
+// ClearFieldsBeforeWriting will clear existing fields (e.g. tags) in the file before writing any
+// new tags
+// Sample :
+//   e, err := NewExiftool(ClearFieldsBeforeWriting())
+func ClearFieldsBeforeWriting() func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.clearFieldsBeforeWriting = true
 		return nil
 	}
 }
