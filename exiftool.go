@@ -122,8 +122,8 @@ func (e *Exiftool) Close() error {
 
 	// Wait for wait to finish or timeout
 	select {
-	case <- ch:
-	case <- time.After(WaitTimeout):
+	case <-ch:
+	case <-time.After(WaitTimeout):
 		errs = append(errs, errors.New("Timed out waiting for exiftool to exit"))
 	}
 
@@ -269,16 +269,29 @@ func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
 }
 
 func splitReadyToken(data []byte, atEOF bool) (int, []byte, error) {
-	idx := bytes.Index(data, readyToken)
-	if idx == -1 {
-		if atEOF && len(data) > 0 {
-			return 0, data, fmt.Errorf("no final token found")
-		}
-
+	if atEOF && len(data) == 0 {
 		return 0, nil, nil
 	}
 
-	return idx + readyTokenLen, data[:idx], nil
+	// if exiftool parse file error, maybe return unknow string (This is usually caused by exifTool error output).
+	// e.g.
+	// filehash: 8e2a7aaeeee829f77b1a1029b9f7524879bbe399
+	// outpuut: 'x' outside of string in unpack at /usr/share/perl5/vendor_perl/Image/ExifTool.pm line 5059.
+	if i := bytes.IndexByte(data, '\n'); i >= 0 {
+		if !bytes.Equal(data[:i], []byte{91, 123}) {
+			return i + 1, data[0:i], nil
+		}
+	}
+
+	if i := bytes.Index(data, readyToken); i >= 0 {
+		return i + readyTokenLen, data[0:i], nil
+	}
+
+	if atEOF {
+		return len(data), data, nil
+	}
+
+	return 0, nil, nil
 }
 
 func handleWriteMetadataResponse(resp string) error {
