@@ -122,8 +122,8 @@ func (e *Exiftool) Close() error {
 
 	// Wait for wait to finish or timeout
 	select {
-	case <- ch:
-	case <- time.After(WaitTimeout):
+	case <-ch:
+	case <-time.After(WaitTimeout):
 		errs = append(errs, errors.New("Timed out waiting for exiftool to exit"))
 	}
 

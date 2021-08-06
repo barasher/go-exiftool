@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"strings"
-	"testing"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -191,7 +191,6 @@ func TestCloseExifToolNominal(t *testing.T) {
 	assert.Nil(t, e.Close())
 }
 
-
 type readWriteCloserMock struct {
 	writeInt int
 	writeErr error
@@ -364,16 +363,16 @@ func TestSetExiftoolBinaryPath(t *testing.T) {
 }
 
 func TestWriteMetadataSuccessTokenHandling(t *testing.T) {
-	testCases := []struct{
-		name string
-		testResp string
+	testCases := []struct {
+		name      string
+		testResp  string
 		expectErr bool
 	}{
 		{name: "token as full resp", testResp: writeMetadataSuccessToken, expectErr: false},
 		{name: "token at resp end", testResp: "prefix text" + writeMetadataSuccessToken,
 			expectErr: false},
 		{name: "token at resp middle",
-			testResp: "prefix text" + writeMetadataSuccessToken + "suffix text",
+			testResp:  "prefix text" + writeMetadataSuccessToken + "suffix text",
 			expectErr: true},
 		{name: "token at resp beginning", testResp: writeMetadataSuccessToken + "suffix text",
 			expectErr: true},
@@ -383,7 +382,7 @@ func TestWriteMetadataSuccessTokenHandling(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 
-		t.Run(tc.name, func(t *testing.T){
+		t.Run(tc.name, func(t *testing.T) {
 			err := handleWriteMetadataResponse(tc.testResp)
 			if tc.expectErr {
 				assert.Error(t, err)
@@ -394,8 +393,8 @@ func TestWriteMetadataSuccessTokenHandling(t *testing.T) {
 	}
 }
 
-var fieldsForWriting = map[string]interface{} {
-	"Title": "fake title",
+var fieldsForWriting = map[string]interface{}{
+	"Title":       "fake title",
 	"Description": "fake description",
 	// TODO: Test ints
 	//       Not testing ints since we'd need to update the
@@ -411,11 +410,11 @@ func TestWriteMetadata(t *testing.T) {
 		e, err := NewExiftool()
 		require.Nil(t, err)
 
-		type testCase struct{
-			md FileMetadata
+		type testCase struct {
+			md        FileMetadata
 			expectErr bool
 		}
-		testCases := []testCase {
+		testCases := []testCase{
 			{md: FileMetadata{File: filepath.Join(tmpDir, "20190404_131804.jpg"),
 				Fields: fieldsForWriting}, expectErr: false},
 			{md: FileMetadata{File: filepath.Join(tmpDir, "binary.mp3"), Fields: fieldsForWriting},
@@ -438,15 +437,14 @@ func TestWriteMetadata(t *testing.T) {
 		e.WriteMetadata(mds)
 		for i, md := range mds {
 			if testCases[i].expectErr {
-				assert.Error(t, md.Err, "file: " + md.File)
+				assert.Error(t, md.Err, "file: "+md.File)
 			} else {
-				assert.Nil(t, md.Err, "file: " + md.File)
+				assert.Nil(t, md.Err, "file: "+md.File)
 			}
 		}
 
 		updatedMDs := e.ExtractMetadata(filenames...)
 		require.Equal(t, len(mds), len(updatedMDs))
-
 
 		for i := 0; i < len(mds); i++ {
 			tc := testCases[i]
@@ -476,7 +474,7 @@ func TestWriteMetadata(t *testing.T) {
 func TestWriteMetadataInvalidField(t *testing.T) {
 	t.Parallel()
 
-	fields := map[string]interface{} {
+	fields := map[string]interface{}{
 		"not a valid field": "invalid field value",
 	}
 
@@ -493,34 +491,33 @@ func TestWriteMetadataInvalidField(t *testing.T) {
 
 		e.WriteMetadata(mds)
 		for _, md := range mds {
-			assert.Error(t, md.Err, "file: " + md.File)
+			assert.Error(t, md.Err, "file: "+md.File)
 		}
 	})
 }
 
-var	fieldsNotDeleted = map[string]struct{}{
-	"ExifToolVersion": {},
-	"FileName": {},
-	"SourceFile": {},
-	"Directory": {},
-	"FileSize": {},
-	"FileModifyDate": {},
-	"FileAccessDate": {},
+var fieldsNotDeleted = map[string]struct{}{
+	"ExifToolVersion":     {},
+	"FileName":            {},
+	"SourceFile":          {},
+	"Directory":           {},
+	"FileSize":            {},
+	"FileModifyDate":      {},
+	"FileAccessDate":      {},
 	"FileInodeChangeDate": {},
-	"FilePermissions": {},
-	"FileType": {},
-	"FileTypeExtension": {},
-	"MIMEType": {},
-	"ImageWidth": {},
-	"ImageHeight": {},
-	"EncodingProcess": {},
-	"BitsPerSample": {},
-	"ColorComponents": {},
-	"YCbCrSubSampling": {},
-	"ImageSize": {},
-	"Megapixels": {},
+	"FilePermissions":     {},
+	"FileType":            {},
+	"FileTypeExtension":   {},
+	"MIMEType":            {},
+	"ImageWidth":          {},
+	"ImageHeight":         {},
+	"EncodingProcess":     {},
+	"BitsPerSample":       {},
+	"ColorComponents":     {},
+	"YCbCrSubSampling":    {},
+	"ImageSize":           {},
+	"Megapixels":          {},
 }
-
 
 func TestWriteMetadataClearExistingFields(t *testing.T) {
 	t.Parallel()
@@ -622,9 +619,9 @@ func TestWriteMetadataDeleteField(t *testing.T) {
 }
 
 func TestWriteMetadataBackupOriginal(t *testing.T) {
-	testCases := []struct{
-		name string
-		args []func(*Exiftool) error
+	testCases := []struct {
+		name               string
+		args               []func(*Exiftool) error
 		expectedNumMatches int
 	}{
 		{name: "backup original", args: []func(*Exiftool) error{BackupOriginal()}, expectedNumMatches: 1},
@@ -645,7 +642,7 @@ func TestWriteMetadataBackupOriginal(t *testing.T) {
 					Fields: fieldsForWriting}}
 				e.WriteMetadata(mds)
 				for _, md := range mds {
-					assert.Nil(t, md.Err, "file: " + md.File)
+					assert.Nil(t, md.Err, "file: "+md.File)
 				}
 
 				matches, err := filepath.Glob(filepath.Join(tmpDir, "*_original"))
@@ -661,7 +658,7 @@ func TestWriteMetadataBackupOriginal(t *testing.T) {
 func runWriteTest(t *testing.T, f func(t *testing.T, tmpDir string)) {
 	tmpDir := t.TempDir()
 	err := copyDir("testdata", tmpDir)
-	require.Nil(t, err, "Unable to copy testdata to temporary directory: " + tmpDir)
+	require.Nil(t, err, "Unable to copy testdata to temporary directory: "+tmpDir)
 
 	f(t, tmpDir)
 }

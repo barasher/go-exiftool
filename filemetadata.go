@@ -131,3 +131,38 @@ func (fm FileMetadata) GetStrings(k string) ([]string, error) {
 		return []string{toString(v)}, nil
 	}
 }
+
+func (fm FileMetadata) set(k string, v interface{}) {
+	fm.Fields[k] = v
+}
+
+// SetString sets a string value for a specific field
+func (fm FileMetadata) SetString(k string, v string) {
+	fm.set(k, v)
+}
+
+// SetInt sets a int value for a specific field
+func (fm FileMetadata) SetInt(k string, v int64) {
+	fm.set(k, v)
+}
+
+// SetFloat sets a float value for a specific field
+func (fm FileMetadata) SetFloat(k string, v float64) {
+	fm.set(k, v)
+}
+
+// SetStrings sets a []String value for a specific field
+func (fm FileMetadata) SetStrings(k string, v []string) {
+	t := make([]interface{}, len(v))
+	for i, c := range v {
+		t[i] = c
+	}
+	fm.set(k, t)
+}
+
+// EmptyFileMetadata creates an empty FileMetadata struct
+func EmptyFileMetadata() FileMetadata {
+	return FileMetadata{
+		Fields: make(map[string]interface{}),
+	}
+}
