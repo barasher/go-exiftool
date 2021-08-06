@@ -152,3 +152,43 @@ func TestGetStrings(t *testing.T) {
 		})
 	}
 }
+
+func TestSetString(t *testing.T) {
+	k := "k"
+	v := "string"
+	fm := EmptyFileMetadata()
+	fm.SetString(k, v)
+	got, err := fm.GetString(k)
+	assert.Nil(t, err)
+	assert.Equal(t, got, v)
+}
+
+func TestSetStrings(t *testing.T) {
+	k := "k"
+	v := []string{"a", "b"}
+	fm := EmptyFileMetadata()
+	fm.SetStrings(k, v)
+	got, err := fm.GetStrings(k)
+	assert.Nil(t, err)
+	assert.Equal(t, got, v)
+}
+
+func TestSetFloat(t *testing.T) {
+	k := "k"
+	v := float64(1.2)
+	fm := EmptyFileMetadata()
+	fm.SetFloat(k, v)
+	got, err := fm.GetFloat(k)
+	assert.Nil(t, err)
+	assert.Equal(t, got, v)
+}
+
+func TestSetInt(t *testing.T) {
+	k := "k"
+	v := int64(42)
+	fm := EmptyFileMetadata()
+	fm.SetInt(k, v)
+	got, err := fm.GetInt(k)
+	assert.Nil(t, err)
+	assert.Equal(t, got, v)
+}
