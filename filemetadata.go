@@ -28,7 +28,7 @@ type FileMetadata struct {
 // KeyNotFoundError will be returned if the key can't be found
 func (fm FileMetadata) GetString(k string) (string, error) {
 	v, found := fm.Fields[k]
-	if !found {
+	if !found || v == nil {
 		return defaultString, ErrKeyNotFound
 	}
 
@@ -52,7 +52,7 @@ func toString(v interface{}) string {
 // KeyNotFoundError will be returned if the key can't be found.
 func (fm FileMetadata) GetFloat(k string) (float64, error) {
 	v, found := fm.Fields[k]
-	if !found {
+	if !found || v == nil {
 		return defaultFloat, ErrKeyNotFound
 	}
 
@@ -83,7 +83,7 @@ func toFloatFallback(str string) (float64, error) {
 // a parsing error occurs.
 func (fm FileMetadata) GetInt(k string) (int64, error) {
 	v, found := fm.Fields[k]
-	if !found {
+	if !found || v == nil {
 		return defaultInt, ErrKeyNotFound
 	}
 
@@ -113,7 +113,7 @@ func toIntFallback(str string) (int64, error) {
 // KeyNotFoundError will be returned if the key can't be found.
 func (fm FileMetadata) GetStrings(k string) ([]string, error) {
 	v, found := fm.Fields[k]
-	if !found {
+	if !found || v == nil {
 		return []string{}, ErrKeyNotFound
 	}
 
@@ -158,6 +158,11 @@ func (fm FileMetadata) SetStrings(k string, v []string) {
 		t[i] = c
 	}
 	fm.set(k, t)
+}
+
+// Clear removes value for a specific field
+func (fm FileMetadata) Clear(k string) {
+	fm.set(k, nil)
 }
 
 // EmptyFileMetadata creates an empty FileMetadata struct

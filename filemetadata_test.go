@@ -192,3 +192,16 @@ func TestSetInt(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, got, v)
 }
+
+func TestClear(t *testing.T) {
+	fm := EmptyFileMetadata()
+	fm.Clear("k")
+	_, err := fm.GetString("k")
+	assert.Equal(t, ErrKeyNotFound, err)
+	_, err = fm.GetInt("k")
+	assert.Equal(t, ErrKeyNotFound, err)
+	_, err = fm.GetFloat("k")
+	assert.Equal(t, ErrKeyNotFound, err)
+	_, err = fm.GetStrings("k")
+	assert.Equal(t, ErrKeyNotFound, err)
+}

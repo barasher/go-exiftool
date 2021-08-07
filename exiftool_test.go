@@ -403,222 +403,162 @@ var fieldsForWriting = map[string]interface{}{
 	"CameraImagingModelPixelAspectRatio": 1.5, // test reals/floats
 }
 
-func TestWriteMetadata(t *testing.T) {
+func TestWriteMetadataFails(t *testing.T) {
 	t.Parallel()
 
-	runWriteTest(t, func(t *testing.T, tmpDir string) {
-		e, err := NewExiftool()
-		require.Nil(t, err)
+	nonWritableFile := filepath.Join(t.TempDir(), "binary.mp3")
+	err := copyFile("testdata/binary.mp3", nonWritableFile)
+	require.Nil(t, err)
 
-		type testCase struct {
-			md        FileMetadata
-			expectErr bool
-		}
-		testCases := []testCase{
-			{md: FileMetadata{File: filepath.Join(tmpDir, "20190404_131804.jpg"),
-				Fields: fieldsForWriting}, expectErr: false},
-			{md: FileMetadata{File: filepath.Join(tmpDir, "binary.mp3"), Fields: fieldsForWriting},
-				expectErr: true},
-			{md: FileMetadata{File: filepath.Join(tmpDir, "empty.jpg"), Fields: fieldsForWriting},
-				expectErr: true},
-			{md: FileMetadata{File: filepath.Join(tmpDir, "extractEmbedded.mp4"),
-				Fields: fieldsForWriting}, expectErr: false},
-			{md: FileMetadata{File: filepath.Join(tmpDir, "file_does_not_exist"),
-				Fields: fieldsForWriting}, expectErr: true},
-		}
+	e, err := NewExiftool()
+	require.Nil(t, err)
+	defer e.Close()
 
-		mds := make([]FileMetadata, 0, len(testCases))
-		filenames := make([]string, 0, len(testCases))
-		for _, tc := range testCases {
-			mds = append(mds, tc.md)
-			filenames = append(filenames, tc.md.File)
-		}
+	testCases := []struct {
+		tcID   string
+		inFile string
+		expOk  bool
+	}{
+		{"nonExisting", "nonExisting", false},
+		{"nonWritable", nonWritableFile, false},
+	}
 
-		e.WriteMetadata(mds)
-		for i, md := range mds {
-			if testCases[i].expectErr {
-				assert.Error(t, md.Err, "file: "+md.File)
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.tcID, func(t *testing.T) {
+			fm := EmptyFileMetadata()
+			fm.File = tc.inFile
+			fm.SetString("Title", "fakeTitle")
+			fms := []FileMetadata{fm}
+			e.WriteMetadata(fms)
+
+			if tc.expOk {
+				require.Nil(t, fms[0].Err)
 			} else {
-				assert.Nil(t, md.Err, "file: "+md.File)
+				require.NotNil(t, fms[0].Err)
 			}
-		}
+		})
+	}
 
-		updatedMDs := e.ExtractMetadata(filenames...)
-		require.Equal(t, len(mds), len(updatedMDs))
+}
 
-		for i := 0; i < len(mds); i++ {
-			tc := testCases[i]
-			expected := mds[i]
-			actual := updatedMDs[i]
+func TestWriteMetadataNominal(t *testing.T) {
+	t.Parallel()
 
-			if tc.expectErr {
-				if expected.Err != nil {
-					// handles the case where exiftool supports reading from a file type
-					// but not writing
-					return
-				}
-				assert.Error(t, actual.Err)
-				return
-			}
+	testFile := filepath.Join(t.TempDir(), "20190404_131804.jpg")
+	err := copyFile("testdata/20190404_131804.jpg", testFile)
+	require.Nil(t, err)
 
-			assert.Nil(t, actual.Err)
-			assert.Equal(t, tc.md.File, actual.File)
+	e, err := NewExiftool()
+	require.Nil(t, err)
+	defer e.Close()
 
-			for k := range expected.Fields {
-				assert.Equal(t, expected.Fields[k], actual.Fields[k], "Field %s differs", k)
-			}
-		}
-	})
+	mds := e.ExtractMetadata(testFile)
+	require.Len(t, mds, 1)
+	require.Nil(t, mds[0].Err)
+
+	mds[0].SetString("Title", "fakeTitle")
+	mds[0].SetFloat("CameraImagingModelPixelAspectRatio", float64(1.5))
+	mds[0].SetString("ImageUniqueID", "newID")
+	mds[0].Clear("Flash")
+	mds[0].Err = nil // TODO should be nilled before writing medatada
+	e.WriteMetadata(mds)
+	require.Nil(t, mds[0].Err)
+
+	mds2 := e.ExtractMetadata(testFile)
+	require.Len(t, mds2, 1)
+	require.Nil(t, mds2[0].Err)
+
+	gotStr, err := mds2[0].GetString("Title")
+	require.Nil(t, err)
+	require.Equal(t, "fakeTitle", gotStr)
+
+	gotFloat, err := mds2[0].GetFloat("CameraImagingModelPixelAspectRatio")
+	require.Nil(t, err)
+	require.Equal(t, float64(1.5), gotFloat)
+
+	// override
+	gotOverStr, err := mds2[0].GetString("ImageUniqueID")
+	require.Nil(t, err)
+	require.Equal(t, "newID", gotOverStr)
+
+	// delete
+	_, err = mds2[0].GetString("Flash")
+	require.Equal(t, ErrKeyNotFound, err)
 }
 
 func TestWriteMetadataInvalidField(t *testing.T) {
 	t.Parallel()
 
-	fields := map[string]interface{}{
-		"not a valid field": "invalid field value",
-	}
+	testFile := filepath.Join(t.TempDir(), "20190404_131804.jpg")
+	err := copyFile("testdata/20190404_131804.jpg", testFile)
+	require.Nil(t, err)
 
-	runWriteTest(t, func(t *testing.T, tmpDir string) {
-		e, err := NewExiftool()
-		require.Nil(t, err)
+	e, err := NewExiftool()
+	require.Nil(t, err)
+	defer e.Close()
 
-		mds := []FileMetadata{
-			{File: filepath.Join(tmpDir, "20190404_131804.jpg"), Fields: fields},
-			{File: filepath.Join(tmpDir, "binary.mp3"), Fields: fields},
-			{File: filepath.Join(tmpDir, "empty.jpg"), Fields: fields},
-			{File: filepath.Join(tmpDir, "extractEmbedded.mp4"), Fields: fields},
-		}
-
-		e.WriteMetadata(mds)
-		for _, md := range mds {
-			assert.Error(t, md.Err, "file: "+md.File)
-		}
-	})
-}
-
-var fieldsNotDeleted = map[string]struct{}{
-	"ExifToolVersion":     {},
-	"FileName":            {},
-	"SourceFile":          {},
-	"Directory":           {},
-	"FileSize":            {},
-	"FileModifyDate":      {},
-	"FileAccessDate":      {},
-	"FileInodeChangeDate": {},
-	"FilePermissions":     {},
-	"FileType":            {},
-	"FileTypeExtension":   {},
-	"MIMEType":            {},
-	"ImageWidth":          {},
-	"ImageHeight":         {},
-	"EncodingProcess":     {},
-	"BitsPerSample":       {},
-	"ColorComponents":     {},
-	"YCbCrSubSampling":    {},
-	"ImageSize":           {},
-	"Megapixels":          {},
+	mds := []FileMetadata{EmptyFileMetadata()}
+	mds[0].SetString("InvalidField", "ValueDoesNotMatter")
+	e.WriteMetadata(mds)
+	require.NotNil(t, mds[0].Err)
 }
 
 func TestWriteMetadataClearExistingFields(t *testing.T) {
 	t.Parallel()
 
-	runWriteTest(t, func(t *testing.T, tmpDir string) {
-		e, err := NewExiftool(ClearFieldsBeforeWriting())
-		require.Nil(t, err)
+	tcs := []struct {
+		tcID      string
+		inEnabled bool
+		expExists bool
+	}{
+		{"disabled", false, true},
+		{"enabled", true, false},
+	}
+	for _, tc := range tcs {
+		tc := tc
+		t.Run(tc.tcID, func(t *testing.T) {
+			testFile := filepath.Join(t.TempDir(), "20190404_131804.jpg")
+			err := copyFile("testdata/20190404_131804.jpg", testFile)
+			require.Nil(t, err)
 
-		filename := filepath.Join(tmpDir, "20190404_131804.jpg")
-		mds := []FileMetadata{{File: filename}}
-
-		fieldsToBeDeleted := []string{}
-		origMDs := e.ExtractMetadata(filename)
-		assert.Equal(t, len(mds), len(origMDs))
-		assert.Nil(t, origMDs[0].Err)
-		for f := range origMDs[0].Fields {
-			if _, ok := fieldsNotDeleted[f]; ok {
-				continue
+			var e *Exiftool
+			if tc.inEnabled {
+				e, err = NewExiftool(ClearFieldsBeforeWriting())
+			} else {
+				e, err = NewExiftool()
 			}
-			fieldsToBeDeleted = append(fieldsToBeDeleted, f)
-		}
-		assert.NotEmpty(t, fieldsToBeDeleted)
+			require.Nil(t, err)
+			defer e.Close()
 
-		e.WriteMetadata(mds)
-		assert.Nil(t, mds[0].Err)
+			mds := e.ExtractMetadata(testFile)
+			require.Len(t, mds, 1)
+			require.Nil(t, mds[0].Err)
+			_, err = mds[0].GetString("ImageUniqueID")
+			require.Nil(t, err)
 
-		updatedMDs := e.ExtractMetadata(filename)
-		assert.Equal(t, len(mds), len(updatedMDs))
-		assert.Nil(t, updatedMDs[0].Err)
-		for _, f := range fieldsToBeDeleted {
-			assert.NotContains(t, updatedMDs[0].Fields, f)
-		}
-	})
-}
+			mds2 := []FileMetadata{EmptyFileMetadata()}
+			mds2[0].File = mds[0].File
+			mds2[0].SetString("Title", "fakeTitle")
+			e.WriteMetadata(mds2)
+			require.Nil(t, mds2[0].Err)
 
-func TestWriteMetadataClearBeforeWriting(t *testing.T) {
-	t.Parallel()
-
-	runWriteTest(t, func(t *testing.T, tmpDir string) {
-		e, err := NewExiftool(ClearFieldsBeforeWriting())
-		require.Nil(t, err)
-
-		filename := filepath.Join(tmpDir, "20190404_131804.jpg")
-		mds := []FileMetadata{{File: filename, Fields: fieldsForWriting}}
-
-		fieldsToBeDeleted := []string{}
-		origMDs := e.ExtractMetadata(filename)
-		assert.Equal(t, len(mds), len(origMDs))
-		assert.Nil(t, origMDs[0].Err)
-		for f := range origMDs[0].Fields {
-			if _, ok := fieldsNotDeleted[f]; ok {
-				continue
+			mds3 := e.ExtractMetadata(testFile)
+			require.Len(t, mds3, 1)
+			require.Nil(t, mds3[0].Err)
+			_, err = mds3[0].GetString("ImageUniqueID")
+			if tc.expExists {
+				require.Nil(t, err)
+			} else {
+				require.Equal(t, ErrKeyNotFound, err)
 			}
-			fieldsToBeDeleted = append(fieldsToBeDeleted, f)
-		}
-		assert.NotEmpty(t, fieldsToBeDeleted)
+		})
+	}
 
-		e.WriteMetadata(mds)
-		assert.Nil(t, mds[0].Err)
-
-		updatedMDs := e.ExtractMetadata(filename)
-		assert.Equal(t, len(mds), len(updatedMDs))
-		assert.Nil(t, updatedMDs[0].Err)
-		for _, f := range fieldsToBeDeleted {
-			assert.NotContains(t, updatedMDs[0].Fields, f)
-		}
-		for f := range fieldsForWriting {
-			assert.Equal(t, fieldsForWriting[f], updatedMDs[0].Fields[f])
-		}
-	})
-}
-
-func TestWriteMetadataDeleteField(t *testing.T) {
-	t.Parallel()
-
-	runWriteTest(t, func(t *testing.T, tmpDir string) {
-		e, err := NewExiftool()
-		require.Nil(t, err)
-
-		fieldToDelete := "Flash"
-		filename := filepath.Join(tmpDir, "20190404_131804.jpg")
-		mds := []FileMetadata{{File: filename, Fields: map[string]interface{}{}}}
-		mds[0].Fields[fieldToDelete] = nil
-
-		origMDs := e.ExtractMetadata(filename)
-		assert.Equal(t, len(mds), len(origMDs))
-		assert.Nil(t, origMDs[0].Err)
-		assert.Equal(t, "No Flash", origMDs[0].Fields[fieldToDelete])
-
-		e.WriteMetadata(mds)
-		assert.Nil(t, mds[0].Err)
-
-		updatedMDs := e.ExtractMetadata(filename)
-		assert.Equal(t, len(mds), len(updatedMDs))
-		assert.Nil(t, updatedMDs[0].Err)
-		_, ok := updatedMDs[0].Fields[fieldToDelete]
-		assert.False(t, ok)
-	})
 }
 
 func TestWriteMetadataBackupOriginal(t *testing.T) {
+	// TODO refactor
 	testCases := []struct {
 		name               string
 		args               []func(*Exiftool) error
@@ -659,7 +599,6 @@ func runWriteTest(t *testing.T, f func(t *testing.T, tmpDir string)) {
 	tmpDir := t.TempDir()
 	err := copyDir("testdata", tmpDir)
 	require.Nil(t, err, "Unable to copy testdata to temporary directory: "+tmpDir)
-
 	f(t, tmpDir)
 }
 
