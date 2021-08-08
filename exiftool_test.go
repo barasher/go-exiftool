@@ -2,6 +2,7 @@ package exiftool
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -393,22 +394,11 @@ func TestWriteMetadataSuccessTokenHandling(t *testing.T) {
 	}
 }
 
-var fieldsForWriting = map[string]interface{}{
-	"Title":       "fake title",
-	"Description": "fake description",
-	// TODO: Test ints
-	//       Not testing ints since we'd need to update the
-	//       decoder and FileMetadata to use UseNumber()
-	// "CameraImagingModelImageHeight": 5, // test ints
-	"CameraImagingModelPixelAspectRatio": 1.5, // test reals/floats
-}
-
 func TestWriteMetadataFails(t *testing.T) {
 	t.Parallel()
 
 	nonWritableFile := filepath.Join(t.TempDir(), "binary.mp3")
-	err := copyFile("testdata/binary.mp3", nonWritableFile)
-	require.Nil(t, err)
+	require.Nil(t, copyFile("testdata/binary.mp3", nonWritableFile))
 
 	e, err := NewExiftool()
 	require.Nil(t, err)
@@ -446,8 +436,7 @@ func TestWriteMetadataNominal(t *testing.T) {
 	t.Parallel()
 
 	testFile := filepath.Join(t.TempDir(), "20190404_131804.jpg")
-	err := copyFile("testdata/20190404_131804.jpg", testFile)
-	require.Nil(t, err)
+	require.Nil(t, copyFile("testdata/20190404_131804.jpg", testFile))
 
 	e, err := NewExiftool()
 	require.Nil(t, err)
@@ -491,8 +480,7 @@ func TestWriteMetadataInvalidField(t *testing.T) {
 	t.Parallel()
 
 	testFile := filepath.Join(t.TempDir(), "20190404_131804.jpg")
-	err := copyFile("testdata/20190404_131804.jpg", testFile)
-	require.Nil(t, err)
+	require.Nil(t, copyFile("testdata/20190404_131804.jpg", testFile))
 
 	e, err := NewExiftool()
 	require.Nil(t, err)
@@ -519,10 +507,10 @@ func TestWriteMetadataClearExistingFields(t *testing.T) {
 		tc := tc
 		t.Run(tc.tcID, func(t *testing.T) {
 			testFile := filepath.Join(t.TempDir(), "20190404_131804.jpg")
-			err := copyFile("testdata/20190404_131804.jpg", testFile)
-			require.Nil(t, err)
+			require.Nil(t, copyFile("testdata/20190404_131804.jpg", testFile))
 
 			var e *Exiftool
+			var err error
 			if tc.inEnabled {
 				e, err = NewExiftool(ClearFieldsBeforeWriting())
 			} else {
@@ -554,102 +542,66 @@ func TestWriteMetadataClearExistingFields(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestWriteMetadataBackupOriginal(t *testing.T) {
-	// TODO refactor
-	testCases := []struct {
-		name               string
-		args               []func(*Exiftool) error
-		expectedNumMatches int
+	t.Parallel()
+
+	tcs := []struct {
+		tcID      string
+		inEnabled bool
 	}{
-		{name: "backup original", args: []func(*Exiftool) error{BackupOriginal()}, expectedNumMatches: 1},
-		{name: "overwrite original", args: nil, expectedNumMatches: 0},
+		{"disabled", false},
+		{"enabled", true},
 	}
 
-	for _, tc := range testCases {
+	for _, tc := range tcs {
 		tc := tc
+		t.Run(tc.tcID, func(t *testing.T) {
 
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			filename := fmt.Sprintf("20190404_131804_%v.jpg", tc.tcID)
+			testFile := filepath.Join(t.TempDir(), filename)
+			require.Nil(t, copyFile("testdata/20190404_131804.jpg", testFile))
 
-			runWriteTest(t, func(t *testing.T, tmpDir string) {
-				e, err := NewExiftool(tc.args...)
+			var e *Exiftool
+			var err error
+			if tc.inEnabled {
+				e, err = NewExiftool(BackupOriginal())
+			} else {
+				e, err = NewExiftool()
+			}
+			require.Nil(t, err)
+			defer e.Close()
+
+			mds := []FileMetadata{EmptyFileMetadata()}
+			mds[0].File = testFile
+			mds[0].SetString("ImageUniqueID", "newValue")
+			e.WriteMetadata(mds)
+			require.Nil(t, mds[0].Err)
+
+			backupedFile := fmt.Sprintf("%v_original", testFile)
+			_, err = os.Stat(backupedFile)
+			if tc.inEnabled {
 				require.Nil(t, err)
-
-				mds := []FileMetadata{{File: filepath.Join(tmpDir, "20190404_131804.jpg"),
-					Fields: fieldsForWriting}}
-				e.WriteMetadata(mds)
-				for _, md := range mds {
-					assert.Nil(t, md.Err, "file: "+md.File)
-				}
-
-				matches, err := filepath.Glob(filepath.Join(tmpDir, "*_original"))
-				assert.Nil(t, err)
-
-				t.Log("matches:", matches)
-				assert.Equal(t, tc.expectedNumMatches, len(matches))
-			})
+			} else {
+				require.True(t, errors.Is(err, os.ErrNotExist))
+			}
 		})
 	}
 }
 
-func runWriteTest(t *testing.T, f func(t *testing.T, tmpDir string)) {
-	tmpDir := t.TempDir()
-	err := copyDir("testdata", tmpDir)
-	require.Nil(t, err, "Unable to copy testdata to temporary directory: "+tmpDir)
-	f(t, tmpDir)
-}
-
-func copyDir(src, dest string) error {
-	return filepath.Walk(src, func(path string, info os.FileInfo, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if info.IsDir() {
-			if path == src {
-				return nil
-			}
-			return filepath.SkipDir
-		}
-		if !info.Mode().IsRegular() {
-			// ignore non-regular files
-			return nil
-		}
-		return copyFile(path, filepath.Join(dest, info.Name()))
-	})
-}
-
 func copyFile(src, dest string) (err error) {
-	var (
-		s *os.File
-		d *os.File
-	)
-
-	s, err = os.Open(src)
+	s, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		e := s.Close()
-		if err != nil {
-			err = fmt.Errorf("Unable to close src file: %s. Orig error: %w", e.Error(), err)
-		}
-		err = e
-	}()
+	defer s.Close()
 
-	d, err = os.Create(dest)
+	d, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		e := d.Close()
-		if err != nil {
-			err = fmt.Errorf("Unable to close dest file: %s. Orig error: %w", e.Error(), err)
-		}
-		err = e
-	}()
+	defer d.Close()
 
 	_, err = io.Copy(d, s)
 	if err != nil {
