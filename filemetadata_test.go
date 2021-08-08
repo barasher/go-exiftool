@@ -195,6 +195,7 @@ func TestSetInt(t *testing.T) {
 
 func TestClear(t *testing.T) {
 	fm := EmptyFileMetadata()
+	fm.SetString("k", "v")
 	fm.Clear("k")
 	_, err := fm.GetString("k")
 	assert.Equal(t, ErrKeyNotFound, err)
@@ -204,4 +205,19 @@ func TestClear(t *testing.T) {
 	assert.Equal(t, ErrKeyNotFound, err)
 	_, err = fm.GetStrings("k")
 	assert.Equal(t, ErrKeyNotFound, err)
+}
+
+func TestClearAll(t *testing.T) {
+	fm := EmptyFileMetadata()
+	fm.SetString("k", "v")
+	fm.ClearAll()
+	_, err := fm.GetString("k")
+	assert.Equal(t, ErrKeyNotFound, err)
+	_, err = fm.GetInt("k")
+	assert.Equal(t, ErrKeyNotFound, err)
+	_, err = fm.GetFloat("k")
+	assert.Equal(t, ErrKeyNotFound, err)
+	_, err = fm.GetStrings("k")
+	assert.Equal(t, ErrKeyNotFound, err)
+
 }

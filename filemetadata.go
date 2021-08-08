@@ -160,9 +160,16 @@ func (fm FileMetadata) SetStrings(k string, v []string) {
 	fm.set(k, t)
 }
 
-// Clear removes value for a specific field
+// Clear removes value for a specific metadata field
 func (fm FileMetadata) Clear(k string) {
 	fm.set(k, nil)
+}
+
+// ClearAll removes all medatadata
+func (fm FileMetadata) ClearAll() {
+	for k, _ := range fm.Fields {
+		fm.set(k, nil)
+	}
 }
 
 // EmptyFileMetadata creates an empty FileMetadata struct
