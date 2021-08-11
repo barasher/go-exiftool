@@ -451,7 +451,7 @@ func TestWriteMetadataNominal(t *testing.T) {
 	mds[0].SetString("ImageUniqueID", "newID")
 	mds[0].SetStrings("Keywords", []string{"kw1", "kw2"})
 	mds[0].Clear("Flash")
-	mds[0].Err = nil // TODO should be nilled before writing medatada
+	mds[0].Err = nil
 	e.WriteMetadata(mds)
 	require.Nil(t, mds[0].Err)
 

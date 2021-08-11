@@ -202,6 +202,7 @@ func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
 	defer e.lock.Unlock()
 
 	for i, md := range fileMetadata {
+		fileMetadata[i].Err = nil
 		if _, err := os.Stat(md.File); err != nil {
 			if os.IsNotExist(err) {
 				fileMetadata[i].Err = ErrNotExist
