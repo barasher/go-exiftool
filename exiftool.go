@@ -207,9 +207,7 @@ func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
 				fileMetadata[i].Err = ErrNotExist
 				continue
 			}
-
 			fileMetadata[i].Err = err
-
 			continue
 		}
 
@@ -228,22 +226,25 @@ func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
 		}
 
 		for k, v := range md.Fields {
-			newValue := ""
 			switch v.(type) {
 			case nil:
+				if _, err := fmt.Fprintln(e.stdin, "-"+k+"="); err != nil {
+					fileMetadata[i].Err = err
+					continue
+				}
 			default:
-				var err error
-				newValue, err = md.GetString(k)
+				strTab, err := md.GetStrings(k)
 				if err != nil {
 					fileMetadata[i].Err = err
 					continue
 				}
-			}
-
-			// TODO: support writing an empty string via '^='
-			if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+newValue); err != nil {
-				fileMetadata[i].Err = err
-				continue
+				for _, str := range strTab {
+					// TODO: support writing an empty string via '^='
+					if _, err := fmt.Fprintln(e.stdin, "-"+k+"="+str); err != nil {
+						fileMetadata[i].Err = err
+						continue
+					}
+				}
 			}
 		}
 

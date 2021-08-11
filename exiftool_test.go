@@ -449,6 +449,7 @@ func TestWriteMetadataNominal(t *testing.T) {
 	mds[0].SetString("Title", "fakeTitle")
 	mds[0].SetFloat("CameraImagingModelPixelAspectRatio", float64(1.5))
 	mds[0].SetString("ImageUniqueID", "newID")
+	mds[0].SetStrings("Keywords", []string{"kw1", "kw2"})
 	mds[0].Clear("Flash")
 	mds[0].Err = nil // TODO should be nilled before writing medatada
 	e.WriteMetadata(mds)
@@ -465,6 +466,10 @@ func TestWriteMetadataNominal(t *testing.T) {
 	gotFloat, err := mds2[0].GetFloat("CameraImagingModelPixelAspectRatio")
 	require.Nil(t, err)
 	require.Equal(t, float64(1.5), gotFloat)
+
+	gotStrings, err := mds2[0].GetStrings("Keywords")
+	require.Nil(t, err)
+	require.Equal(t, []string{"kw1", "kw2"}, gotStrings)
 
 	// override
 	gotOverStr, err := mds2[0].GetString("ImageUniqueID")
