@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"io/ioutil"
 	"path/filepath"
 
 	"github.com/barasher/go-exiftool"
@@ -55,7 +56,7 @@ func copyFile(src, dest string) (err error) {
 func ExampleExiftool_Write() {
 	// error handling are skipped in this example
 
-	tmpDir, _ := os.MkdirTemp("", "ExampleExiftoolWrite")
+	tmpDir, _ := ioutil.TempDir("", "ExampleExiftoolWrite")
 	testFile := filepath.Join(tmpDir, "20190404_131804.jpg")
 	copyFile("testdata/20190404_131804.jpg", testFile)
 
