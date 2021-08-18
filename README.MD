@@ -8,7 +8,7 @@
 
 **go-exiftool** is a golang library that wraps [ExifTool](https://www.sno.phy.queensu.ca/~phil/exiftool/).
 
-[ExifTool](https://www.sno.phy.queensu.ca/~phil/exiftool/)'s purpose is to extract as much metadata as possible (EXIF, IPTC, XMP, GPS, ...) from [a lots of differents file types](https://www.sno.phy.queensu.ca/~phil/exiftool/#supported) (Office documents, pictures, movies, PDF, ...).
+[ExifTool](https://www.sno.phy.queensu.ca/~phil/exiftool/)'s purpose is to extract and update as much metadata as possible (EXIF, IPTC, XMP, GPS, ...) from [a lots of differents file types](https://www.sno.phy.queensu.ca/~phil/exiftool/#supported) (Office documents, pictures, movies, PDF, ...).
 
 **go-exiftool** uses [ExifTool](https://www.sno.phy.queensu.ca/~phil/exiftool/)'s *`stay_open`* feature to [optimize performance](https://www.sno.phy.queensu.ca/~phil/exiftool/#performance).
 
@@ -21,6 +21,8 @@
 By default, `go-exiftool` binary will look for `exiftool` binary in $PATH, but another location can be specified (see `SetExiftoolBinaryPath` functional option).
 
 ## Usage
+
+### Metadata extraction
 
 ```go
 et, err := exiftool.NewExiftool()
@@ -62,6 +64,10 @@ Output :
 (...)
 ```
 
+### Metadata update
+
+See [example function ExampleExiftool_Write in exiftool_sample_test.go](exiftool_sample_test.go)
+
 ## Changelog
 
 - v1.1.0 : initial release
@@ -88,3 +94,5 @@ Output :
   - "SetExiftoolBinaryPath" functional option : specify where to find exiftool binary (default : $path)
 - [v1.6.2](https://github.com/barasher/go-exiftool/milestone/12)
   - Several improvements (thanks to [Dale Hui](https://github.com/dhui))
+- [v1.7.0](https://github.com/barasher/go-exiftool/milestone/13)
+  - Add metadata writing capabilities (thanks to [Dale Hui](https://github.com/dhui))
