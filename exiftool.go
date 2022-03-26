@@ -42,6 +42,7 @@ type Exiftool struct {
 	cmd                      *exec.Cmd
 	backupOriginal           bool
 	clearFieldsBeforeWriting bool
+	debugWriters             []io.Writer
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
@@ -84,8 +85,21 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	if err = e.cmd.Start(); err != nil {
 		return nil, fmt.Errorf("error when executing command: %w", err)
 	}
+	e.log("executing shell command:\n\t", e.cmd.String())
 
 	return &e, nil
+}
+
+func (e *Exiftool) log(args ...interface{}) {
+	for _, w := range e.debugWriters {
+		fmt.Fprintln(w, args...)
+	}
+}
+
+func (e *Exiftool) logf(format string, args ...interface{}) {
+	for _, w := range e.debugWriters {
+		fmt.Fprintf(w, format, args...)
+	}
 }
 
 // Close closes exiftool. If anything went wrong, a non empty error will be returned
@@ -94,6 +108,7 @@ func (e *Exiftool) Close() error {
 	defer e.lock.Unlock()
 
 	for _, v := range closeArgs {
+		e.log("sending to STDIN:\n\t", v)
 		_, err := fmt.Fprintln(e.stdin, v)
 		if err != nil {
 			return err
@@ -155,17 +170,21 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 			continue
 		}
 
+		e.log("sending to exiftool STDIN:")
 		for _, curA := range extractArgs {
+			e.logf("\t%s\n", curA)
 			if _, err := fmt.Fprintln(e.stdin, curA); err != nil {
 				fms[i].Err = err
 				continue
 			}
 		}
 
+		e.logf("\t'%s'\n", f)
 		if _, err := fmt.Fprintln(e.stdin, f); err != nil {
 			fms[i].Err = err
 			continue
 		}
+		e.logf("\t%s\n", executeArg)
 		if _, err := fmt.Fprintln(e.stdin, executeArg); err != nil {
 			fms[i].Err = err
 			continue
@@ -374,6 +393,21 @@ func SetExiftoolBinaryPath(p string) func(*Exiftool) error {
 			return fmt.Errorf("error while checking if path '%v' exists: %w", p, err)
 		}
 		e.exiftoolBinPath = p
+		return nil
+	}
+}
+
+// Debug enables printing debug logs to stderr
+// Sample :
+//   e, err := NewExiftool(Debug())
+func Debug(writers ...io.Writer) func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.debugWriters = writers
+
+		if len(writers) == 0 {
+			e.debugWriters = []io.Writer{os.Stderr}
+		}
+
 		return nil
 	}
 }

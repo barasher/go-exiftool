@@ -2,6 +2,7 @@ package exiftool
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -84,6 +85,26 @@ func TestSingleExtract(t *testing.T) {
 				assert.Equalf(t, tc.expOk[i], fm.Err == nil, "#%v different", i)
 			}
 		})
+	}
+}
+
+func TestDebug(t *testing.T) {
+	t.Parallel()
+
+	b := bytes.NewBuffer([]byte{})
+
+	e, err := NewExiftool(Debug(b))
+
+	assert.Nilf(t, err, "error not nil: %v", err)
+
+	defer e.Close()
+
+	e.ExtractMetadata("./testdata/20190404_131804.jpg")
+
+	fmt.Println(b.String())
+
+	if len(b.String()) == 0 {
+		t.Error("expected debug output")
 	}
 }
 
