@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -613,4 +614,27 @@ func copyFile(src, dest string) (err error) {
 		return err
 	}
 	return nil
+}
+
+func TestFailOnDirectoryInput(t *testing.T) {
+	//  https://github.com/barasher/go-exiftool/issues/52
+	e, err := NewExiftool()
+	require.Nil(t, err)
+	defer e.Close()
+
+	// create test directory with about 200MB worth of photos
+	// 10,000 of the included jpg or 6 30MB CR2's both repro
+	tmpPath := t.TempDir()
+	for i := 0; i < 10_000; i++ {
+		err := copyFile("./testdata/20190404_131804.jpg", path.Join(tmpPath, fmt.Sprintf("%d.jpg", i)))
+		require.NoError(t, err)
+	}
+
+	fms := e.ExtractMetadata(tmpPath)
+	assert.Len(t, fms, 1)
+	assert.Equal(t, ErrNotFile, fms[0].Err)
+
+	fms = e.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Len(t, fms, 1)
+	assert.Nil(t, fms[0].Err)
 }
