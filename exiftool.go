@@ -85,21 +85,35 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	if err = e.cmd.Start(); err != nil {
 		return nil, fmt.Errorf("error when executing command: %w", err)
 	}
-	e.log("executing shell command:\n\t", e.cmd.String())
+	if err := e.log("executing shell command:\n\t", e.cmd.String()); err != nil {
+		return nil, err
+	}
 
 	return &e, nil
 }
 
-func (e *Exiftool) log(args ...interface{}) {
+func (e *Exiftool) log(args ...interface{}) error {
 	for _, w := range e.debugWriters {
-		fmt.Fprintln(w, args...)
+
+		_, err := fmt.Fprintln(w, args...)
+
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
-func (e *Exiftool) logf(format string, args ...interface{}) {
+func (e *Exiftool) logf(format string, args ...interface{}) error {
 	for _, w := range e.debugWriters {
-		fmt.Fprintf(w, format, args...)
+
+		_, err := fmt.Fprintf(w, format, args...)
+
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // Close closes exiftool. If anything went wrong, a non empty error will be returned
@@ -108,7 +122,10 @@ func (e *Exiftool) Close() error {
 	defer e.lock.Unlock()
 
 	for _, v := range closeArgs {
-		e.log("sending to STDIN:\n\t", v)
+		if err := e.log("sending to STDIN:\n\t", v); err != nil {
+			return err
+		}
+
 		_, err := fmt.Fprintln(e.stdin, v)
 		if err != nil {
 			return err
