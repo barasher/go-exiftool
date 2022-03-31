@@ -414,7 +414,7 @@ func SetExiftoolBinaryPath(p string) func(*Exiftool) error {
 	}
 }
 
-// Debug enables printing debug logs to stderr
+// Debug enables writing debug logs to io.Writers of your choice or os.Stderr (default)
 // Sample :
 //   e, err := NewExiftool(Debug())
 func Debug(writers ...io.Writer) func(*Exiftool) error {
