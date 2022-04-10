@@ -28,6 +28,9 @@ var WaitTimeout = time.Second
 // ErrNotExist is a sentinel error for non existing file
 var ErrNotExist = errors.New("file does not exist")
 
+// ErrNotFile is a sentinel error that is returned when a folder is provided instead of a rerular file
+var ErrNotFile = errors.New("can't extract metadata from folder")
+
 // Exiftool is the exiftool utility wrapper
 type Exiftool struct {
 	lock                     sync.Mutex
@@ -144,14 +147,17 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 	for i, f := range files {
 		fms[i].File = f
 
-		if _, err := os.Stat(f); err != nil {
+		s, err := os.Stat(f)
+		if err != nil {
+			fms[i].Err = err
 			if os.IsNotExist(err) {
 				fms[i].Err = ErrNotExist
-				continue
 			}
+			continue
+		}
 
-			fms[i].Err = err
-
+		if s.IsDir() {
+			fms[i].Err = ErrNotFile
 			continue
 		}
 

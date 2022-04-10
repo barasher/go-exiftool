@@ -614,3 +614,13 @@ func copyFile(src, dest string) (err error) {
 	}
 	return nil
 }
+
+func TestFailOnDirectoryInput(t *testing.T) {
+	e, err := NewExiftool()
+	require.Nil(t, err)
+	defer e.Close()
+
+	fms := e.ExtractMetadata("./testdata")
+	assert.Len(t, fms, 1)
+	assert.NotNil(t, fms[0].Err)
+}
