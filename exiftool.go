@@ -48,7 +48,6 @@ type Exiftool struct {
 	cmd                      *exec.Cmd
 	backupOriginal           bool
 	clearFieldsBeforeWriting bool
-	pipeReader               io.Reader
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
