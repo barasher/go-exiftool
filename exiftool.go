@@ -31,6 +31,9 @@ var ErrNotExist = errors.New("file does not exist")
 // ErrNotFile is a sentinel error that is returned when a folder is provided instead of a rerular file
 var ErrNotFile = errors.New("can't extract metadata from folder")
 
+// ErrBufferTooSmall is a sentinel error that is returned when the buffer used to store Exiftool's output is too small.
+var ErrBufferTooSmall = errors.New("exiftool's buffer too small (see Buffer init option)")
+
 // Exiftool is the exiftool utility wrapper
 type Exiftool struct {
 	lock                     sync.Mutex
@@ -45,6 +48,7 @@ type Exiftool struct {
 	cmd                      *exec.Cmd
 	backupOriginal           bool
 	clearFieldsBeforeWriting bool
+	pipeReader               io.Reader
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
@@ -177,13 +181,18 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 			continue
 		}
 
-		if !e.scanMergedOut.Scan() {
-			fms[i].Err = fmt.Errorf("nothing on stdMergedOut")
+		scanOk := e.scanMergedOut.Scan()
+		scanErr := e.scanMergedOut.Err()
+		if scanErr != nil {
+			if scanErr == bufio.ErrTooLong {
+				fms[i].Err = ErrBufferTooSmall
+				continue
+			}
+			fms[i].Err = fmt.Errorf("error while reading stdMergedOut: %w", e.scanMergedOut.Err())
 			continue
 		}
-
-		if e.scanMergedOut.Err() != nil {
-			fms[i].Err = fmt.Errorf("error while reading stdMergedOut: %w", e.scanMergedOut.Err())
+		if !scanOk {
+			fms[i].Err = fmt.Errorf("error while reading stdMergedOut: EOF")
 			continue
 		}
 
@@ -264,8 +273,18 @@ func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
 			continue
 		}
 
-		if !e.scanMergedOut.Scan() {
-			fileMetadata[i].Err = fmt.Errorf("nothing on stdMergedOut")
+		scanOk := e.scanMergedOut.Scan()
+		scanErr := e.scanMergedOut.Err()
+		if scanErr != nil {
+			if scanErr == bufio.ErrTooLong {
+				fileMetadata[i].Err = ErrBufferTooSmall
+				continue
+			}
+			fileMetadata[i].Err = fmt.Errorf("error while reading stdMergedOut: %w", e.scanMergedOut.Err())
+			continue
+		}
+		if !scanOk {
+			fileMetadata[i].Err = fmt.Errorf("error while reading stdMergedOut: EOF")
 			continue
 		}
 

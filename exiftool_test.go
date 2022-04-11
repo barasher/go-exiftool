@@ -624,3 +624,14 @@ func TestFailOnDirectoryInput(t *testing.T) {
 	assert.Len(t, fms, 1)
 	assert.NotNil(t, fms[0].Err)
 }
+
+func TestBufferTooSmallError(t *testing.T) {
+	b := make([]byte, 10)
+	e, err := NewExiftool(Buffer(b, 9))
+	require.Nil(t, err)
+	defer e.Close()
+
+	fms := e.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Len(t, fms, 1)
+	assert.Equal(t, ErrBufferTooSmall, fms[0].Err)
+}
