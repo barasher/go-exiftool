@@ -96,3 +96,6 @@ See [example function ExampleExiftool_Write in exiftool_sample_test.go](exiftool
   - Several improvements (thanks to [Dale Hui](https://github.com/dhui))
 - [v1.7.0](https://github.com/barasher/go-exiftool/milestone/13)
   - Add metadata writing capabilities (thanks to [Dale Hui](https://github.com/dhui))
+- [v1.7.1](https://github.com/barasher/go-exiftool/milestone/14)
+  - [Fix a bug](https://github.com/barasher/go-exiftool/issues/52) that was blocking `go-exiftool` when a folder was provided. Folder metadata extraction will now return a new sentinel error (ErrNotFile).
+  - Add a new sentinel error (`ErrBufferTooSmall`) that is returned when `go-exiftool`'s buffer isn't big enough for a specifi file (countermeasure: initialize `go-exiftool` with the `Buffer` option)
