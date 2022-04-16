@@ -187,7 +187,11 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 			continue
 		}
 
-		e.log("sending to exiftool STDIN:")
+		fms[i].Err = e.log("sending to exiftool STDIN:")
+		if fms[i].Err != nil {
+			continue
+		}
+
 		for _, curA := range extractArgs {
 			e.logf("\t%s\n", curA)
 			if _, err := fmt.Fprintln(e.stdin, curA); err != nil {
@@ -196,12 +200,21 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 			}
 		}
 
-		e.logf("\t'%s'\n", f)
+		fms[i].Err = e.logf("\t'%s'\n", f)
+		if fms[i].Err != nil {
+			continue
+		}
+
 		if _, err := fmt.Fprintln(e.stdin, f); err != nil {
 			fms[i].Err = err
 			continue
 		}
-		e.logf("\t%s\n", executeArg)
+
+		fms[i].Err = e.logf("\t%s\n", executeArg)
+		if fms[i].Err != nil {
+			continue
+		}
+
 		if _, err := fmt.Fprintln(e.stdin, executeArg); err != nil {
 			fms[i].Err = err
 			continue
