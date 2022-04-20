@@ -173,6 +173,7 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 
 	fms := make([]FileMetadata, len(files))
 
+filesLoop:
 	for i, f := range files {
 		fms[i].File = f
 
@@ -193,7 +194,11 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 		}
 
 		for _, curA := range extractArgs {
-			e.logf("\t%s\n", curA)
+			fms[i].Err = e.logf("\t%s\n", curA)
+			if fms[i].Err != nil {
+				continue filesLoop
+			}
+
 			if _, err := fmt.Fprintln(e.stdin, curA); err != nil {
 				fms[i].Err = err
 				continue
