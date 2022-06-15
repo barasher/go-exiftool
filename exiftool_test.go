@@ -268,6 +268,20 @@ func TestNewExifTool_WithCharset(t *testing.T) {
 	assert.Nil(t, metas[0].Err)
 }
 
+func TestApi(t *testing.T) {
+	t.Parallel()
+
+	e, err := NewExiftool()
+	assert.Nil(t, err)
+	defer e.Close()
+	lengthBefore := len(e.extraInitArgs)
+
+	assert.Nil(t, Api("apiValue")(e))
+	assert.Equal(t, lengthBefore+2, len(e.extraInitArgs))
+	assert.Equal(t, "-api", e.extraInitArgs[lengthBefore])
+	assert.Equal(t, "apiValue", e.extraInitArgs[lengthBefore+1])
+}
+
 func TestNoPrintConversion(t *testing.T) {
 	t.Parallel()
 
