@@ -360,6 +360,30 @@ func TestDateFormat(t *testing.T) {
 	assert.Equal(t, int64(1554409083), createDateInt)
 }
 
+func TestCoordFormat(t *testing.T) {
+	t.Parallel()
+
+	eWithout, err := NewExiftool()
+	assert.Nil(t, err)
+	defer eWithout.Close()
+	metas := eWithout.ExtractMetadata("./testdata/gps.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	latitude, err := metas[0].GetString("GPSLatitude")
+	assert.Nil(t, err)
+	assert.Equal(t, `43 deg 28' 2.81" N`, latitude) // backward compatibility
+
+	eWith, err := NewExiftool(CoordFormant("%+f"))
+	assert.Nil(t, err)
+	defer eWith.Close()
+	metas = eWith.ExtractMetadata("./testdata/gps.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	latitude, err = metas[0].GetString("GPSLatitude")
+	assert.Nil(t, err)
+	assert.Equal(t, "+43.467448", latitude)
+}
+
 func TestSetExiftoolBinaryPath(t *testing.T) {
 	t.Parallel()
 
