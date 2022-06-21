@@ -336,6 +336,30 @@ func TestExtractAllBinaryMetadata(t *testing.T) {
 	assert.True(t, strings.HasPrefix(osn, "base64"))
 }
 
+func TestDateFormat(t *testing.T) {
+	t.Parallel()
+
+	eWithout, err := NewExiftool()
+	assert.Nil(t, err)
+	defer eWithout.Close()
+	metas := eWithout.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	createDate, err := metas[0].GetString("CreateDate")
+	assert.Nil(t, err)
+	assert.Equal(t, "2019:04:04 13:18:03", createDate) // backward compatibility
+
+	eWith, err := NewExiftool(DateFormant("%s"))
+	assert.Nil(t, err)
+	defer eWith.Close()
+	metas = eWith.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	createDateInt, err := metas[0].GetInt("CreateDate")
+	assert.Nil(t, err)
+	assert.Equal(t, int64(1554409083), createDateInt)
+}
+
 func TestSetExiftoolBinaryPath(t *testing.T) {
 	t.Parallel()
 
