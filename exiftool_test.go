@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -357,7 +358,12 @@ func TestDateFormat(t *testing.T) {
 	assert.Nil(t, metas[0].Err)
 	createDateInt, err := metas[0].GetInt("CreateDate")
 	assert.Nil(t, err)
-	assert.Equal(t, int64(1554409083), createDateInt)
+
+	// create date is being returned based on the timezone of system this test is being run from
+	// so we normalize the value by adding it's timezone offset
+	_, offset := time.Unix(createDateInt, 0).Zone()
+
+	assert.Equal(t, int64(1554383883), createDateInt+int64(offset))
 }
 
 func TestCoordFormat(t *testing.T) {
