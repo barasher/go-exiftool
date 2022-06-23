@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -334,6 +335,59 @@ func TestExtractAllBinaryMetadata(t *testing.T) {
 	osn, err = metas[0].GetString("Picture")
 	assert.Nil(t, err)
 	assert.True(t, strings.HasPrefix(osn, "base64"))
+}
+
+func TestDateFormat(t *testing.T) {
+	t.Parallel()
+
+	eWithout, err := NewExiftool()
+	assert.Nil(t, err)
+	defer eWithout.Close()
+	metas := eWithout.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	createDate, err := metas[0].GetString("CreateDate")
+	assert.Nil(t, err)
+	assert.Equal(t, "2019:04:04 13:18:03", createDate) // backward compatibility
+
+	eWith, err := NewExiftool(DateFormant("%s"))
+	assert.Nil(t, err)
+	defer eWith.Close()
+	metas = eWith.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	createDateInt, err := metas[0].GetInt("CreateDate")
+	assert.Nil(t, err)
+
+	// create date is being returned based on the timezone of system this test is being run from
+	// so we normalize the value by adding it's timezone offset
+	_, offset := time.Unix(createDateInt, 0).Zone()
+
+	assert.Equal(t, int64(1554383883), createDateInt+int64(offset))
+}
+
+func TestCoordFormat(t *testing.T) {
+	t.Parallel()
+
+	eWithout, err := NewExiftool()
+	assert.Nil(t, err)
+	defer eWithout.Close()
+	metas := eWithout.ExtractMetadata("./testdata/gps.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	latitude, err := metas[0].GetString("GPSLatitude")
+	assert.Nil(t, err)
+	assert.Equal(t, `43 deg 28' 2.81" N`, latitude) // backward compatibility
+
+	eWith, err := NewExiftool(CoordFormant("%+f"))
+	assert.Nil(t, err)
+	defer eWith.Close()
+	metas = eWith.ExtractMetadata("./testdata/gps.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	latitude, err = metas[0].GetString("GPSLatitude")
+	assert.Nil(t, err)
+	assert.Equal(t, "+43.467448", latitude)
 }
 
 func TestSetExiftoolBinaryPath(t *testing.T) {

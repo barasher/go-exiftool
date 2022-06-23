@@ -367,6 +367,26 @@ func ExtractAllBinaryMetadata() func(*Exiftool) error {
 	}
 }
 
+// DateFormant defines the -dateFormat value to pass to Exiftool, see https://exiftool.org/ExifTool.html#DateFormat
+// Sample :
+//   e, err := NewExiftool(DateFormant("%s"))
+func DateFormant(format string) func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.extraInitArgs = append(e.extraInitArgs, "-dateFormat", format)
+		return nil
+	}
+}
+
+// CoordFormant defines the -coordFormat value to pass to Exiftool, see https://exiftool.org/ExifTool.html#CoordFormat
+// Sample :
+//   e, err := NewExiftool(CoordFormant("%+f"))
+func CoordFormant(format string) func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.extraInitArgs = append(e.extraInitArgs, "-coordFormat", format)
+		return nil
+	}
+}
+
 // BackupOriginal backs up the original file when writing the file metadata
 // instead of overwriting the original (activates Exiftool's '-overwrite_original' parameter)
 // Sample :
