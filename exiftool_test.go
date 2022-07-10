@@ -294,7 +294,10 @@ func TestApiParameterImpact(t *testing.T) {
 	assert.Nil(t, err)
 	defer eWith.Close()
 
-	for _, testData := range []struct{ e *Exiftool; dateTimeExpected string }{
+	for _, testData := range []struct {
+		e                *Exiftool
+		dateTimeExpected string
+	}{
 		{eWithout, "2019:04:04 13:18:03"},
 		{eWith, "2019"},
 	} {
