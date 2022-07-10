@@ -269,6 +269,45 @@ func TestNewExifTool_WithCharset(t *testing.T) {
 	assert.Nil(t, metas[0].Err)
 }
 
+func TestApiParameterPassing(t *testing.T) {
+	t.Parallel()
+
+	e, err := NewExiftool()
+	assert.Nil(t, err)
+	defer e.Close()
+	lengthBefore := len(e.extraInitArgs)
+
+	assert.Nil(t, Api("apiValue")(e))
+	assert.Equal(t, lengthBefore+2, len(e.extraInitArgs))
+	assert.Equal(t, "-api", e.extraInitArgs[lengthBefore])
+	assert.Equal(t, "apiValue", e.extraInitArgs[lengthBefore+1])
+}
+
+func TestApiParameterImpact(t *testing.T) {
+	t.Parallel()
+
+	eWithout, err := NewExiftool()
+	assert.Nil(t, err)
+	defer eWithout.Close()
+
+	eWith, err := NewExiftool(Api("DateFormat=%Y"))
+	assert.Nil(t, err)
+	defer eWith.Close()
+
+	for _, testData := range []struct{ e *Exiftool; dateTimeExpected string }{
+		{eWithout, "2019:04:04 13:18:03"},
+		{eWith, "2019"},
+	} {
+		metas := testData.e.ExtractMetadata("./testdata/20190404_131804.jpg")
+		assert.Equal(t, 1, len(metas))
+		assert.Nil(t, metas[0].Err)
+
+		dateTime, err := metas[0].GetString("DateTimeOriginal")
+		assert.Nil(t, err)
+		assert.Equal(t, testData.dateTimeExpected, dateTime)
+	}
+}
+
 func TestNoPrintConversion(t *testing.T) {
 	t.Parallel()
 

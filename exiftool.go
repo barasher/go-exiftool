@@ -337,6 +337,16 @@ func Charset(charset string) func(*Exiftool) error {
 	}
 }
 
+// Api defines an -api value to pass to Exiftool, see https://www.exiftool.org/exiftool_pod.html#Advanced-options
+// Sample :
+//   e, err := NewExiftool(Api("QuickTimeUTC"))
+func Api(apiValue string) func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.extraInitArgs = append(e.extraInitArgs, "-api", apiValue)
+		return nil
+	}
+}
+
 // NoPrintConversion enables 'No print conversion' mode, see https://exiftool.org/exiftool_pod.html.
 // Sample :
 //   e, err := NewExiftool(NoPrintConversion())
