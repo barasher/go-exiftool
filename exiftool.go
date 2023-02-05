@@ -17,7 +17,7 @@ import (
 const writeMetadataSuccessTokenLen = len(writeMetadataSuccessToken)
 
 var executeArg = "-execute"
-var initArgs = []string{"-stay_open", "True", "-@", "-"}
+var initArgs = []string{"-charset", "filename=utf8", "-stay_open", "True", "-@", "-"}
 var extractArgs = []string{"-j"}
 var closeArgs = []string{"-stay_open", "False", executeArg}
 var readyTokenLen = len(readyToken)
