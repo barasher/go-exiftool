@@ -101,3 +101,5 @@ See [example function ExampleExiftool_Write in exiftool_sample_test.go](exiftool
   - Add a new sentinel error (`ErrBufferTooSmall`) that is returned when `go-exiftool`'s buffer isn't big enough for a specifi file (countermeasure: initialize `go-exiftool` with the `Buffer` option)
   - [New option to specify a date format (`DateFormat`)](https://github.com/barasher/go-exiftool/pull/60) (thanks to [Andy Gorman](https://github.com/agorman))
   - [New option to output format for GPS coordinates (`CoordFormat`)](https://github.com/barasher/go-exiftool/pull/60) (thanks to [Andy Gorman](https://github.com/agorman))
+- [v1.9.0](https://github.com/barasher/go-exiftool/milestone/15)
+  - [New option to specify `-api` parameter to Exiftool](https://github.com/barasher/go-exiftool/issues/59) (thanks to [Blesmol](https://github.com/Blesmol))
