@@ -38,7 +38,7 @@ var ErrBufferTooSmall = errors.New("exiftool's buffer too small (see Buffer init
 type Exiftool struct {
 	lock                     sync.Mutex
 	stdin                    io.WriteCloser
-	stdMergedOut             io.ReadCloser
+	stdMergedOut             io.Reader
 	scanMergedOut            *bufio.Scanner
 	bufferSet                bool
 	buffer                   []byte
@@ -70,18 +70,24 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	}
 
 	e.cmd = exec.Command(e.exiftoolBinPath, args...)
-	r, w := io.Pipe()
-	e.stdMergedOut = r
 
-	e.cmd.Stdout = w
-	e.cmd.Stderr = w
+	stdout, err := e.cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("error when piping stdout: %w", err)
+	}
 
-	var err error
+	stderr, err := e.cmd.StderrPipe()
+	if err != nil {
+		return nil, fmt.Errorf("error when piping stderr: %w", err)
+	}
+
+	e.stdMergedOut = io.MultiReader(stdout, stderr)
+
 	if e.stdin, err = e.cmd.StdinPipe(); err != nil {
 		return nil, fmt.Errorf("error when piping stdin: %w", err)
 	}
 
-	e.scanMergedOut = bufio.NewScanner(r)
+	e.scanMergedOut = bufio.NewScanner(e.stdMergedOut)
 	if e.bufferSet {
 		e.scanMergedOut.Buffer(e.buffer, e.bufferMaxSize)
 	}
@@ -107,10 +113,6 @@ func (e *Exiftool) Close() error {
 	}
 
 	var errs []error
-	if err := e.stdMergedOut.Close(); err != nil {
-		errs = append(errs, fmt.Errorf("error while closing stdMergedOut: %w", err))
-	}
-
 	if err := e.stdin.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("error while closing stdin: %w", err))
 	}
@@ -210,7 +212,8 @@ func (e *Exiftool) ExtractMetadata(files ...string) []FileMetadata {
 // WriteMetadata writes the given metadata for each file.
 // Any errors will be saved to FileMetadata.Err
 // Note: If you're reusing an existing FileMetadata instance,
-//       you should nil the Err before passing it to WriteMetadata
+//
+//	you should nil the Err before passing it to WriteMetadata
 func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -316,8 +319,9 @@ func handleWriteMetadataResponse(resp string) error {
 
 // Buffer defines the buffer used to read from stdout and stderr, see https://golang.org/pkg/bufio/#Scanner.Buffer
 // Sample :
-//  buf := make([]byte, 128*1000)
-//  e, err := NewExiftool(Buffer(buf, 64*1000))
+//
+//	buf := make([]byte, 128*1000)
+//	e, err := NewExiftool(Buffer(buf, 64*1000))
 func Buffer(buf []byte, max int) func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.bufferSet = true
@@ -329,7 +333,8 @@ func Buffer(buf []byte, max int) func(*Exiftool) error {
 
 // Charset defines the -charset value to pass to Exiftool, see https://exiftool.org/faq.html#Q10 and https://exiftool.org/faq.html#Q18
 // Sample :
-//   e, err := NewExiftool(Charset("filename=utf8"))
+//
+//	e, err := NewExiftool(Charset("filename=utf8"))
 func Charset(charset string) func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-charset", charset)
@@ -339,7 +344,8 @@ func Charset(charset string) func(*Exiftool) error {
 
 // Api defines an -api value to pass to Exiftool, see https://www.exiftool.org/exiftool_pod.html#Advanced-options
 // Sample :
-//   e, err := NewExiftool(Api("QuickTimeUTC"))
+//
+//	e, err := NewExiftool(Api("QuickTimeUTC"))
 func Api(apiValue string) func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-api", apiValue)
@@ -349,7 +355,8 @@ func Api(apiValue string) func(*Exiftool) error {
 
 // NoPrintConversion enables 'No print conversion' mode, see https://exiftool.org/exiftool_pod.html.
 // Sample :
-//   e, err := NewExiftool(NoPrintConversion())
+//
+//	e, err := NewExiftool(NoPrintConversion())
 func NoPrintConversion() func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-n")
@@ -359,7 +366,8 @@ func NoPrintConversion() func(*Exiftool) error {
 
 // ExtractEmbedded extracts embedded metadata from files (activates Exiftool's '-ee' paramater)
 // Sample :
-//   e, err := NewExiftool(ExtractEmbedded())
+//
+//	e, err := NewExiftool(ExtractEmbedded())
 func ExtractEmbedded() func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-ee")
@@ -369,7 +377,8 @@ func ExtractEmbedded() func(*Exiftool) error {
 
 // ExtractAllBinaryMetadata extracts all binary metadata (activates Exiftool's '-b' paramater)
 // Sample :
-//   e, err := NewExiftool(ExtractAllBinaryMetadata())
+//
+//	e, err := NewExiftool(ExtractAllBinaryMetadata())
 func ExtractAllBinaryMetadata() func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-b")
@@ -379,7 +388,8 @@ func ExtractAllBinaryMetadata() func(*Exiftool) error {
 
 // DateFormant defines the -dateFormat value to pass to Exiftool, see https://exiftool.org/ExifTool.html#DateFormat
 // Sample :
-//   e, err := NewExiftool(DateFormant("%s"))
+//
+//	e, err := NewExiftool(DateFormant("%s"))
 func DateFormant(format string) func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-dateFormat", format)
@@ -389,7 +399,8 @@ func DateFormant(format string) func(*Exiftool) error {
 
 // CoordFormant defines the -coordFormat value to pass to Exiftool, see https://exiftool.org/ExifTool.html#CoordFormat
 // Sample :
-//   e, err := NewExiftool(CoordFormant("%+f"))
+//
+//	e, err := NewExiftool(CoordFormant("%+f"))
 func CoordFormant(format string) func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.extraInitArgs = append(e.extraInitArgs, "-coordFormat", format)
@@ -400,7 +411,8 @@ func CoordFormant(format string) func(*Exiftool) error {
 // BackupOriginal backs up the original file when writing the file metadata
 // instead of overwriting the original (activates Exiftool's '-overwrite_original' parameter)
 // Sample :
-//   e, err := NewExiftool(BackupOriginal())
+//
+//	e, err := NewExiftool(BackupOriginal())
 func BackupOriginal() func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.backupOriginal = true
@@ -411,7 +423,8 @@ func BackupOriginal() func(*Exiftool) error {
 // ClearFieldsBeforeWriting will clear existing fields (e.g. tags) in the file before writing any
 // new tags
 // Sample :
-//   e, err := NewExiftool(ClearFieldsBeforeWriting())
+//
+//	e, err := NewExiftool(ClearFieldsBeforeWriting())
 func ClearFieldsBeforeWriting() func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.clearFieldsBeforeWriting = true
@@ -421,7 +434,8 @@ func ClearFieldsBeforeWriting() func(*Exiftool) error {
 
 // SetExiftoolBinaryPath sets exiftool's binary path. When not specified, the binary will have to be in $PATH
 // Sample :
-//   e, err := NewExiftool(SetExiftoolBinaryPath("/usr/bin/exiftool"))
+//
+//	e, err := NewExiftool(SetExiftoolBinaryPath("/usr/bin/exiftool"))
 func SetExiftoolBinaryPath(p string) func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		if _, err := os.Stat(p); err != nil {
