@@ -397,13 +397,12 @@ func CoordFormant(format string) func(*Exiftool) error {
 	}
 }
 
-// PrintGroupNames prints the group names with each tag  (activates Exiftool's '-G' paramater)
+// PrintGroupNames prints the group names for each tag based on the pass group number(s), (activates Exiftool's '-G' paramater)
 // Sample :
-//
-//	e, err := NewExiftool(PrintGroupNames())
-func PrintGroupNames() func(*Exiftool) error {
+//	e, err := NewExiftool(PrintGroupNames("0"))
+func PrintGroupNames(groupNumbers string) func(*Exiftool) error {
 	return func(e *Exiftool) error {
-		e.extraInitArgs = append(e.extraInitArgs, "-G")
+		e.extraInitArgs = append(e.extraInitArgs, "-G"+groupNumbers)
 		return nil
 	}
 }
