@@ -432,6 +432,40 @@ func TestCoordFormat(t *testing.T) {
 	assert.Equal(t, "+43.467448", latitude)
 }
 
+func TestPrintGroupNames(t *testing.T) {
+	t.Parallel()
+
+	eWithout, err := NewExiftool()
+	assert.Nil(t, err)
+	defer eWithout.Close()
+	metas := eWithout.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	width, err := metas[0].GetString("ImageWidth")
+	assert.Nil(t, err)
+	assert.Equal(t, `64`, width)
+
+	eWith, err := NewExiftool(PrintGroupNames("0"))
+	assert.Nil(t, err)
+	defer eWith.Close()
+	metas = eWith.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	width, err = metas[0].GetString("File:ImageWidth")
+	assert.Nil(t, err)
+	assert.Equal(t, "64", width)
+
+	eWith, err = NewExiftool(PrintGroupNames("0:1:2:3:4:5:6:7"))
+	assert.Nil(t, err)
+	defer eWith.Close()
+	metas = eWith.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+	width, err = metas[0].GetString("File:Image:Main:JPEG-SOF0:ID-ImageWidth:ImageWidth")
+	assert.Nil(t, err)
+	assert.Equal(t, "64", width)
+}
+
 func TestSetExiftoolBinaryPath(t *testing.T) {
 	t.Parallel()
 
