@@ -103,3 +103,6 @@ See [example function ExampleExiftool_Write in exiftool_sample_test.go](exiftool
   - [New option to output format for GPS coordinates (`CoordFormat`)](https://github.com/barasher/go-exiftool/pull/60) (thanks to [Andy Gorman](https://github.com/agorman))
 - [v1.9.0](https://github.com/barasher/go-exiftool/milestone/15)
   - [New option to specify `-api` parameter to Exiftool](https://github.com/barasher/go-exiftool/issues/59) (thanks to [Blesmol](https://github.com/Blesmol))
+- [v1.10.0](https://github.com/barasher/go-exiftool/milestone/16)
+  - [New option to prefix metadata keys with group names (specifies `-G` parameter to Exiftool)](https://github.com/barasher/go-exiftool/issues/67) (thanks to [Andy Gorman](https://github.com/agorman))
+
