@@ -38,7 +38,7 @@ var ErrBufferTooSmall = errors.New("exiftool's buffer too small (see Buffer init
 type Exiftool struct {
 	lock                     sync.Mutex
 	stdin                    io.WriteCloser
-	stdMergedOut             io.ReadCloser
+	stdMergedOut             io.Reader
 	scanMergedOut            *bufio.Scanner
 	bufferSet                bool
 	buffer                   []byte
@@ -70,18 +70,24 @@ func NewExiftool(opts ...func(*Exiftool) error) (*Exiftool, error) {
 	}
 
 	e.cmd = exec.Command(e.exiftoolBinPath, args...)
-	r, w := io.Pipe()
-	e.stdMergedOut = r
 
-	e.cmd.Stdout = w
-	e.cmd.Stderr = w
+	stdout, err := e.cmd.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("error when piping stdout: %w", err)
+	}
 
-	var err error
+	stderr, err := e.cmd.StderrPipe()
+	if err != nil {
+		return nil, fmt.Errorf("error when piping stderr: %w", err)
+	}
+
+	e.stdMergedOut = io.MultiReader(stdout, stderr)
+
 	if e.stdin, err = e.cmd.StdinPipe(); err != nil {
 		return nil, fmt.Errorf("error when piping stdin: %w", err)
 	}
 
-	e.scanMergedOut = bufio.NewScanner(r)
+	e.scanMergedOut = bufio.NewScanner(e.stdMergedOut)
 	if e.bufferSet {
 		e.scanMergedOut.Buffer(e.buffer, e.bufferMaxSize)
 	}
@@ -107,10 +113,6 @@ func (e *Exiftool) Close() error {
 	}
 
 	var errs []error
-	if err := e.stdMergedOut.Close(); err != nil {
-		errs = append(errs, fmt.Errorf("error while closing stdMergedOut: %w", err))
-	}
-
 	if err := e.stdin.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("error while closing stdin: %w", err))
 	}
