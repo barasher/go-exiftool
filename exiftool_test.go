@@ -765,3 +765,17 @@ func TestBufferTooSmallError(t *testing.T) {
 	assert.Len(t, fms, 1)
 	assert.Equal(t, ErrBufferTooSmall, fms[0].Err)
 }
+
+func TestSetSourceId(t *testing.T) {
+	t.Parallel()
+
+	e, err := NewExiftool(SetSourceId("test"))
+	pid, info, err := e.GetPidInfo()
+	fmt.Printf("%d, %s\n", pid, info)
+	assert.Nil(t, err)
+	defer e.Close()
+
+	metas := e.ExtractMetadata("./testdata/20190404_131804.jpg")
+	assert.Equal(t, 1, len(metas))
+	assert.Nil(t, metas[0].Err)
+}
