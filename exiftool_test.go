@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -770,12 +771,25 @@ func TestSetSourceId(t *testing.T) {
 	t.Parallel()
 
 	e, err := NewExiftool(SetSourceId("test"))
+	assert.Nil(t, err)
 	pid, info, err := e.GetPidInfo()
 	fmt.Printf("%d, %s\n", pid, info)
 	assert.Nil(t, err)
-	defer e.Close()
 
-	metas := e.ExtractMetadata("./testdata/20190404_131804.jpg")
+	metas := e.ExtractMetadata("./testdata/gps.jpg")
 	assert.Equal(t, 1, len(metas))
 	assert.Nil(t, metas[0].Err)
+	cmd := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "cmd=")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println(err)
+	}
+	cmdStr := string(output)
+	assert.Nil(t, err)
+	if strings.Contains(cmdStr, info) {
+		proc, _ := os.FindProcess(pid)
+		err := proc.Kill()
+		assert.Nil(t, err)
+	}
+	assert.Contains(t, cmdStr, info)
 }
