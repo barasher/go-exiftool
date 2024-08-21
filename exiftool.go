@@ -48,6 +48,7 @@ type Exiftool struct {
 	cmd                      *exec.Cmd
 	backupOriginal           bool
 	clearFieldsBeforeWriting bool
+	ignoreMinorErrors        bool
 }
 
 // NewExiftool instanciates a new Exiftool with configuration functions. If anything went
@@ -228,6 +229,13 @@ func (e *Exiftool) WriteMetadata(fileMetadata []FileMetadata) {
 
 		if !e.backupOriginal {
 			if _, err := fmt.Fprintln(e.stdin, "-overwrite_original"); err != nil {
+				fileMetadata[i].Err = err
+				continue
+			}
+		}
+
+		if e.ignoreMinorErrors {
+			if _, err := fmt.Fprintln(e.stdin, "-m"); err != nil {
 				fileMetadata[i].Err = err
 				continue
 			}
@@ -414,6 +422,17 @@ func PrintGroupNames(groupNumbers string) func(*Exiftool) error {
 func BackupOriginal() func(*Exiftool) error {
 	return func(e *Exiftool) error {
 		e.backupOriginal = true
+		return nil
+	}
+}
+
+// IgnoreMinorErrors sets a `-m` arg to ignore minor exiftool errors when writing the file metadata
+// Sample :
+//
+//	e, err := NewExiftool(IgnoreMinorErrors())
+func IgnoreMinorErrors() func(*Exiftool) error {
+	return func(e *Exiftool) error {
+		e.ignoreMinorErrors = true
 		return nil
 	}
 }
