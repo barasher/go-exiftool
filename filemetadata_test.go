@@ -221,3 +221,17 @@ func TestClearAll(t *testing.T) {
 	assert.Equal(t, ErrKeyNotFound, err)
 
 }
+
+func TestAddString(t *testing.T) {
+	fm := EmptyFileMetadata()
+
+	fm.AddString("key", "value")
+	got, err := fm.GetString("key")
+	assert.Nil(t, err)
+	assert.Equal(t, "value", got)
+
+	fm.AddString("key", "new value")
+	got, err = fm.GetString("key")
+	assert.Nil(t, err)
+	assert.Equal(t, "new value", got)
+}
