@@ -765,3 +765,27 @@ func TestBufferTooSmallError(t *testing.T) {
 	assert.Len(t, fms, 1)
 	assert.Equal(t, ErrBufferTooSmall, fms[0].Err)
 }
+
+func TestWriteMetadataAddString(t *testing.T) {
+	t.Parallel()
+
+	e, err := NewExiftool()
+	assert.Nil(t, err)
+	defer e.Close()
+
+	testFile := filepath.Join(t.TempDir(), "test.jpg")
+	require.Nil(t, copyFile("testdata/20190404_131804.jpg", testFile))
+
+	mds := []FileMetadata{EmptyFileMetadata()}
+	mds[0].File = testFile
+	mds[0].AddString("ImageUniqueID", "newValue")
+	e.WriteMetadata(mds)
+	require.Nil(t, mds[0].Err)
+
+	mds2 := e.ExtractMetadata(testFile)
+	require.Len(t, mds2, 1)
+	require.Nil(t, mds2[0].Err)
+	value, err := mds2[0].GetString("ImageUniqueID")
+	require.Nil(t, err)
+	require.Equal(t, "newValue", value)
+}

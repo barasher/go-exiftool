@@ -178,3 +178,8 @@ func EmptyFileMetadata() FileMetadata {
 		Fields: make(map[string]interface{}),
 	}
 }
+
+// AddString adds a new key-value pair to the Fields map with a string value
+func (fm *FileMetadata) AddString(key string, value string) {
+	fm.Fields[key] = value
+}
